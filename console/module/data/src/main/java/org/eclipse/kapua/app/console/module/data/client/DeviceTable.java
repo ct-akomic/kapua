@@ -109,7 +109,7 @@ public class DeviceTable extends LayoutContainer {
 
     private void initDeviceGrid() {
         List<ColumnConfig> configs = new ArrayList<ColumnConfig>();
-        ColumnConfig column = new ColumnConfig("device", MSGS.deviceInfoTableTopicHeader(), 150);
+        ColumnConfig column = new ColumnConfig("friendlyDevice", MSGS.deviceInfoTableTopicHeader(), 150);
         configs.add(column);
 
         column = new ColumnConfig("timestamp", MSGS.deviceInfoTableLastPostedHeader(), 150);
