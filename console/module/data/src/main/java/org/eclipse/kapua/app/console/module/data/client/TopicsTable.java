@@ -86,11 +86,10 @@ public class TopicsTable extends LayoutContainer {
     }
 
     public void refresh() {
-        topicInfoGrid.mask(GXT.MESSAGES.loadMask_msg());
         topicInfoGrid.getSelectionModel().deselect(getSelectedTopic());
         clearTable();
+        topicInfoGrid.mask(GXT.MESSAGES.loadMask_msg());
         dataService.findTopicsTree(currentSession.getSelectedAccountId(), topicsCallback);
-        topicInfoGrid.unmask();
     }
 
     @Override
@@ -102,6 +101,8 @@ public class TopicsTable extends LayoutContainer {
 
         initTopicInfoTable();
         add(tableContainer);
+
+        topicInfoGrid.mask(GXT.MESSAGES.loadMask_msg());
     }
 
     private void initTopicInfoTable() {
@@ -145,7 +146,6 @@ public class TopicsTable extends LayoutContainer {
         topicInfoGrid.setBorders(false);
         topicInfoGrid.setStateful(false);
         topicInfoGrid.setLoadMask(true);
-        topicInfoGrid.mask("Loading");
         topicInfoGrid.setStripeRows(true);
         topicInfoGrid.getView().setAutoFill(true);
         topicInfoGrid.getView().setForceFit(true);

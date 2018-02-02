@@ -20,6 +20,9 @@ import com.extjs.gxt.ui.client.data.ListLoadResult;
 import com.extjs.gxt.ui.client.data.LoadConfig;
 import com.extjs.gxt.ui.client.data.RpcProxy;
 import com.extjs.gxt.ui.client.event.ButtonEvent;
+import com.extjs.gxt.ui.client.event.ComponentEvent;
+import com.extjs.gxt.ui.client.event.Events;
+import com.extjs.gxt.ui.client.event.Listener;
 import com.extjs.gxt.ui.client.event.SelectionChangedListener;
 import com.extjs.gxt.ui.client.event.SelectionListener;
 import com.extjs.gxt.ui.client.widget.ContentPanel;
@@ -121,7 +124,6 @@ public class DeviceTable extends LayoutContainer {
         };
 
         loader = new BaseListLoader<ListLoadResult<GwtDatastoreDevice>>(proxy);
-        loader.load();
         //
         SwappableListStore<GwtDatastoreDevice> store = new SwappableListStore<GwtDatastoreDevice>(loader);
         deviceGrid = new Grid<GwtDatastoreDevice>(store, new ColumnModel(configs));
@@ -137,6 +139,13 @@ public class DeviceTable extends LayoutContainer {
             deviceGrid.getSelectionModel().addSelectionChangedListener(listener);
         }
 
+        deviceGrid.addListener(Events.Render, new Listener<ComponentEvent>() {
+
+            @Override
+            public void handleEvent(ComponentEvent be) {
+                loader.load();
+            }
+        });
         // pagingToolBar = new PagingToolBar(DEVICE_PAGE_SIZE);
         // pagingToolBar.bind(loader);
         // pagingToolBar.enable();
