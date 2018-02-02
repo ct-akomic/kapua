@@ -14,6 +14,14 @@ package org.eclipse.kapua.app.console.module.data.client;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.extjs.gxt.ui.client.GXT;
+import com.extjs.gxt.ui.client.event.ButtonEvent;
+import com.extjs.gxt.ui.client.event.SelectionListener;
+import com.extjs.gxt.ui.client.widget.LayoutContainer;
+import com.extjs.gxt.ui.client.widget.toolbar.ToolBar;
+import org.eclipse.kapua.app.console.module.api.client.resources.icons.IconSet;
+import org.eclipse.kapua.app.console.module.api.client.resources.icons.KapuaIcon;
+import org.eclipse.kapua.app.console.module.api.client.ui.button.Button;
 import org.eclipse.kapua.app.console.module.api.client.util.FailureHandler;
 import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
 
@@ -22,12 +30,10 @@ import com.extjs.gxt.ui.client.Style.SelectionMode;
 import com.extjs.gxt.ui.client.event.SelectionChangedListener;
 import com.extjs.gxt.ui.client.store.TreeStore;
 import com.extjs.gxt.ui.client.widget.ContentPanel;
-import com.extjs.gxt.ui.client.widget.LayoutContainer;
 import com.extjs.gxt.ui.client.widget.grid.ColumnConfig;
 import com.extjs.gxt.ui.client.widget.grid.ColumnModel;
 import com.extjs.gxt.ui.client.widget.grid.GridSelectionModel;
 import com.extjs.gxt.ui.client.widget.layout.FitLayout;
-import com.extjs.gxt.ui.client.widget.toolbar.PagingToolBar;
 import com.extjs.gxt.ui.client.widget.treegrid.TreeGrid;
 import com.extjs.gxt.ui.client.widget.treegrid.TreeGridCellRenderer;
 import com.google.gwt.core.client.GWT;
@@ -45,7 +51,6 @@ public class TopicsTable extends LayoutContainer {
     private GwtSession currentSession;
     private TreeGrid<GwtTopic> topicInfoGrid;
     private ContentPanel tableContainer;
-    private PagingToolBar pagingToolBar;
     private List<SelectionChangedListener<GwtTopic>> listeners = new ArrayList<SelectionChangedListener<GwtTopic>>();
     private TreeStore<GwtTopic> store;
 
@@ -81,9 +86,11 @@ public class TopicsTable extends LayoutContainer {
     }
 
     public void refresh() {
+        topicInfoGrid.mask(GXT.MESSAGES.loadMask_msg());
         topicInfoGrid.getSelectionModel().deselect(getSelectedTopic());
         clearTable();
         dataService.findTopicsTree(currentSession.getSelectedAccountId(), topicsCallback);
+        topicInfoGrid.unmask();
     }
 
     @Override
@@ -93,12 +100,12 @@ public class TopicsTable extends LayoutContainer {
         setLayout(new FitLayout());
         setBorders(false);
 
-        inittopicInfoTable();
+        initTopicInfoTable();
         add(tableContainer);
     }
 
-    private void inittopicInfoTable() {
-        inittopicInfoGrid();
+    private void initTopicInfoTable() {
+        initTopicInfoGrid();
 
         tableContainer = new ContentPanel();
         tableContainer.setBorders(false);
@@ -108,10 +115,21 @@ public class TopicsTable extends LayoutContainer {
         tableContainer.setScrollMode(Scroll.AUTOY);
         tableContainer.setLayout(new FitLayout());
         tableContainer.add(topicInfoGrid);
-        tableContainer.setBottomComponent(pagingToolBar);
+
+        Button refreshButton = new Button(MSGS.refresh(), new KapuaIcon(IconSet.REFRESH), new SelectionListener<ButtonEvent>() {
+
+            @Override
+            public void componentSelected(ButtonEvent ce) {
+                refresh();
+            }
+        });
+
+        ToolBar tb = new ToolBar();
+        tb.add(refreshButton);
+        tableContainer.setTopComponent(tb);
     }
 
-    private void inittopicInfoGrid() {
+    private void initTopicInfoGrid() {
         List<ColumnConfig> configs = new ArrayList<ColumnConfig>();
 
         ColumnConfig column = new ColumnConfig("topicName", MSGS.topicInfoTableTopicHeader(), 150);

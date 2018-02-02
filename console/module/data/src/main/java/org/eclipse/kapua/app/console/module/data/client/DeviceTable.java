@@ -19,16 +19,22 @@ import com.extjs.gxt.ui.client.data.BaseListLoader;
 import com.extjs.gxt.ui.client.data.ListLoadResult;
 import com.extjs.gxt.ui.client.data.LoadConfig;
 import com.extjs.gxt.ui.client.data.RpcProxy;
+import com.extjs.gxt.ui.client.event.ButtonEvent;
 import com.extjs.gxt.ui.client.event.SelectionChangedListener;
+import com.extjs.gxt.ui.client.event.SelectionListener;
 import com.extjs.gxt.ui.client.widget.ContentPanel;
 import com.extjs.gxt.ui.client.widget.LayoutContainer;
 import com.extjs.gxt.ui.client.widget.grid.ColumnConfig;
 import com.extjs.gxt.ui.client.widget.grid.ColumnModel;
 import com.extjs.gxt.ui.client.widget.grid.Grid;
 import com.extjs.gxt.ui.client.widget.layout.FitLayout;
+import com.extjs.gxt.ui.client.widget.toolbar.ToolBar;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import org.eclipse.kapua.app.console.module.api.client.resources.icons.IconSet;
+import org.eclipse.kapua.app.console.module.api.client.resources.icons.KapuaIcon;
+import org.eclipse.kapua.app.console.module.api.client.ui.button.Button;
 import org.eclipse.kapua.app.console.module.api.client.util.SwappableListStore;
 import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
 import org.eclipse.kapua.app.console.module.data.client.messages.ConsoleDataMessages;
@@ -76,6 +82,14 @@ public class DeviceTable extends LayoutContainer {
     private void initDeviceTable() {
         initDeviceGrid();
 
+        Button refreshButton = new Button(MSGS.refresh(), new KapuaIcon(IconSet.REFRESH), new SelectionListener<ButtonEvent>() {
+
+            @Override
+            public void componentSelected(ButtonEvent ce) {
+               refresh();
+            }
+        });
+
         tableContainer = new ContentPanel();
         tableContainer.setBorders(false);
         tableContainer.setBodyBorder(true);
@@ -84,7 +98,10 @@ public class DeviceTable extends LayoutContainer {
         tableContainer.setScrollMode(Scroll.AUTOY);
         tableContainer.setLayout(new FitLayout());
         tableContainer.add(deviceGrid);
-        // tableContainer.setBottomComponent(pagingToolBar);
+
+        ToolBar tb = new ToolBar();
+        tb.add(refreshButton);
+        tableContainer.setTopComponent(tb);
     }
 
     private void initDeviceGrid() {
