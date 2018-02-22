@@ -11,10 +11,12 @@
  *******************************************************************************/
 package org.eclipse.kapua.app.console.module.tag.client;
 
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
-
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import org.eclipse.kapua.app.console.module.api.client.GwtKapuaErrorCode;
+import org.eclipse.kapua.app.console.module.api.client.GwtKapuaException;
+import org.eclipse.kapua.app.console.module.api.client.util.FailureHandler;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
 import org.eclipse.kapua.app.console.module.tag.client.messages.ConsoleTagMessages;
 import org.eclipse.kapua.app.console.module.tag.shared.model.GwtTag;
 import org.eclipse.kapua.app.console.module.tag.shared.service.GwtTagService;
@@ -44,10 +46,20 @@ public class TagEditDialog extends TagAddDialog {
         GWT_TAG_SERVICE.update(selectedTag, new AsyncCallback<GwtTag>() {
 
             @Override
-            public void onFailure(Throwable arg0) {
+            public void onFailure(Throwable cause) {
                 exitStatus = false;
-                exitMessage = MSGS.dialogEditError(arg0.getLocalizedMessage());
-                hide();
+                FailureHandler.handleFormException(formPanel, cause);
+                status.hide();
+                formPanel.getButtonBar().enable();
+                unmask();
+                submitButton.enable();
+                cancelButton.enable();
+                if (cause instanceof GwtKapuaException) {
+                    GwtKapuaException gwtCause = (GwtKapuaException) cause;
+                    if (gwtCause.getCode().equals(GwtKapuaErrorCode.DUPLICATE_NAME)) {
+                        tagNameField.markInvalid(gwtCause.getMessage());
+                    }
+                }
             }
 
             @Override

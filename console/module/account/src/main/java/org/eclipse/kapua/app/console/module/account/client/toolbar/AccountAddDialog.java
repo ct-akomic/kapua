@@ -11,18 +11,6 @@
  *******************************************************************************/
 package org.eclipse.kapua.app.console.module.account.client.toolbar;
 
-import org.eclipse.kapua.app.console.module.api.client.ui.dialog.entity.EntityAddEditDialog;
-import org.eclipse.kapua.app.console.module.api.client.ui.panel.FormPanel;
-import org.eclipse.kapua.app.console.module.api.client.util.ConsoleInfo;
-import org.eclipse.kapua.app.console.module.api.client.util.DialogUtils;
-import org.eclipse.kapua.app.console.module.api.client.util.FailureHandler;
-import org.eclipse.kapua.app.console.module.api.client.util.validator.TextFieldValidator;
-import org.eclipse.kapua.app.console.module.api.client.util.validator.TextFieldValidator.FieldType;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
-import org.eclipse.kapua.app.console.module.account.client.messages.ConsoleAccountMessages;
-import org.eclipse.kapua.app.console.module.account.shared.model.GwtAccount;
-import org.eclipse.kapua.app.console.module.account.shared.model.GwtAccountCreator;
-
 import com.extjs.gxt.ui.client.widget.form.FieldSet;
 import com.extjs.gxt.ui.client.widget.form.LabelField;
 import com.extjs.gxt.ui.client.widget.form.NumberField;
@@ -31,8 +19,21 @@ import com.extjs.gxt.ui.client.widget.layout.FormData;
 import com.extjs.gxt.ui.client.widget.layout.FormLayout;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import org.eclipse.kapua.app.console.module.account.client.messages.ConsoleAccountMessages;
+import org.eclipse.kapua.app.console.module.account.shared.model.GwtAccount;
+import org.eclipse.kapua.app.console.module.account.shared.model.GwtAccountCreator;
 import org.eclipse.kapua.app.console.module.account.shared.service.GwtAccountService;
 import org.eclipse.kapua.app.console.module.account.shared.service.GwtAccountServiceAsync;
+import org.eclipse.kapua.app.console.module.api.client.GwtKapuaErrorCode;
+import org.eclipse.kapua.app.console.module.api.client.GwtKapuaException;
+import org.eclipse.kapua.app.console.module.api.client.ui.dialog.entity.EntityAddEditDialog;
+import org.eclipse.kapua.app.console.module.api.client.ui.panel.FormPanel;
+import org.eclipse.kapua.app.console.module.api.client.util.ConsoleInfo;
+import org.eclipse.kapua.app.console.module.api.client.util.DialogUtils;
+import org.eclipse.kapua.app.console.module.api.client.util.FailureHandler;
+import org.eclipse.kapua.app.console.module.api.client.util.validator.TextFieldValidator;
+import org.eclipse.kapua.app.console.module.api.client.util.validator.TextFieldValidator.FieldType;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
 
 public class AccountAddDialog extends EntityAddEditDialog {
 
@@ -44,7 +45,7 @@ public class AccountAddDialog extends EntityAddEditDialog {
     protected final FieldSet fieldSet = new FieldSet();
 
     // Account
-    final LabelField parentAccountName = new LabelField();
+    final LabelField parentAccountNameLabel = new LabelField();
     protected final LabelField accountNameLabel = new LabelField();
     protected final TextField<String> accountNameField = new TextField<String>();
     protected final TextField<String> accountPassword = new TextField<String>();
@@ -57,7 +58,7 @@ public class AccountAddDialog extends EntityAddEditDialog {
     // organization
     protected final TextField<String> organizationName = new TextField<String>();
     protected final TextField<String> organizationEmail = new TextField<String>();
-    protected final TextField<String> organizationPersonName = new TextField<String>();
+    protected final TextField<String> organizationContactName = new TextField<String>();
     protected final TextField<String> organizationPhoneNumber = new TextField<String>();
     protected final TextField<String> organizationAddressLine1 = new TextField<String>();
     protected final TextField<String> organizationAddressLine2 = new TextField<String>();
@@ -68,7 +69,7 @@ public class AccountAddDialog extends EntityAddEditDialog {
 
     public AccountAddDialog(GwtSession currentSession) {
         super(currentSession);
-        DialogUtils.resizeDialog(this, 600, 700);
+        DialogUtils.resizeDialog(this, 600, 560);
     }
 
     @Override
@@ -83,18 +84,20 @@ public class AccountAddDialog extends EntityAddEditDialog {
         layoutAccount.setLabelWidth(LABEL_WIDTH_FORM);
         fieldSet.setLayout(layoutAccount);
 
+        FormData accountFieldsetFormData = new FormData("-11");
+
         //
         // Show parent account name
         //
-        parentAccountName.setName("parentAccountName");
-        parentAccountName.setFieldLabel(MSGS.accountFormParentAccount());
-        parentAccountName.setLabelSeparator(":");
-        fieldSet.add(parentAccountName);
+        parentAccountNameLabel.setName("parentAccount");
+        parentAccountNameLabel.setFieldLabel(MSGS.accountFormParentAccount());
+        parentAccountNameLabel.setLabelSeparator(":");
+        parentAccountNameLabel.setValue(currentSession.getSelectedAccountName());
+        fieldSet.add(parentAccountNameLabel, accountFieldsetFormData);
 
         //
         // Account name field
         //
-        accountNameLabel.setName("accountNameLabel");
         accountNameLabel.setFieldLabel(MSGS.accountFormName());
         accountNameLabel.setLabelSeparator(":");
         accountNameLabel.setVisible(false);
@@ -104,7 +107,7 @@ public class AccountAddDialog extends EntityAddEditDialog {
         accountNameField.setName("accountName");
         accountNameField.setFieldLabel("* " + MSGS.accountFormName());
         accountNameField.setValidator(new TextFieldValidator(accountNameField, FieldType.SIMPLE_NAME));
-        fieldSet.add(accountNameField);
+        fieldSet.add(accountNameField, accountFieldsetFormData);
 
         accountFormPanel.add(fieldSet);
 
@@ -116,15 +119,6 @@ public class AccountAddDialog extends EntityAddEditDialog {
         FormLayout layoutDeployment = new FormLayout();
         layoutDeployment.setLabelWidth(LABEL_WIDTH_FORM);
         fieldSetDeployment.setLayout(layoutDeployment);
-
-        //
-        // broker cluster
-        //
-        accountClusterLabel.setName("accountBrokerLabel");
-        accountClusterLabel.setFieldLabel(MSGS.accountFormBrokerCluster());
-        accountClusterLabel.setLabelSeparator(":");
-        accountClusterLabel.setVisible(false);
-        fieldSetDeployment.add(accountClusterLabel);
 
         optlock.setName("optlock");
         optlock.setEditable(false);
@@ -149,7 +143,7 @@ public class AccountAddDialog extends EntityAddEditDialog {
         organizationName.setAllowBlank(false);
         organizationName.setName("organizationName");
         organizationName.setFieldLabel("* " + MSGS.accountFormOrgName());
-        fieldSetOrg.add(organizationName);
+        fieldSetOrg.add(organizationName, accountFieldsetFormData);
 
         //
         // Organization email
@@ -158,13 +152,13 @@ public class AccountAddDialog extends EntityAddEditDialog {
         organizationEmail.setName("organizationEmail");
         organizationEmail.setFieldLabel("* " + MSGS.accountFormOrgEmail());
         organizationEmail.setValidator(new TextFieldValidator(organizationEmail, FieldType.EMAIL));
-        fieldSetOrg.add(organizationEmail);
+        fieldSetOrg.add(organizationEmail, accountFieldsetFormData);
 
         // //////////////////////////////////////////
         // Organization Information sub field set
         // //////////////////////////////////////////
         FieldSet organizationSubFieldSet = new FieldSet();
-        organizationSubFieldSet.setHeading(MSGS.accountFormOrgMoreInformation());
+        organizationSubFieldSet.setHeading(MSGS.accountFormOrgPrimaryContact());
         organizationSubFieldSet.setBorders(false);
         organizationSubFieldSet.setCollapsible(true);
         organizationSubFieldSet.setWidth(515);
@@ -177,14 +171,15 @@ public class AccountAddDialog extends EntityAddEditDialog {
         // Other organization data
         //
 
-        FormData subFieldsetFormData = new FormData("-7");
+        FormData subFieldsetFormData = new FormData("12");
 
-        organizationPersonName.setName("organizationPersonName");
-        organizationPersonName.setFieldLabel(MSGS.accountFormOrgPersonName());
-        organizationSubFieldSet.add(organizationPersonName, subFieldsetFormData);
+        organizationContactName.setName("organizationContactName");
+        organizationContactName.setFieldLabel(MSGS.accountFormOrgContactName());
+        organizationSubFieldSet.add(organizationContactName, subFieldsetFormData);
 
         organizationPhoneNumber.setName("organizationPhoneNumber");
         organizationPhoneNumber.setFieldLabel(MSGS.accountFormOrgPhoneNumber());
+        organizationPhoneNumber.setValidator(new TextFieldValidator(organizationPhoneNumber, FieldType.PHONE));
         organizationSubFieldSet.add(organizationPhoneNumber, subFieldsetFormData);
 
         organizationAddressLine1.setName("organizationAddressLine1");
@@ -227,7 +222,7 @@ public class AccountAddDialog extends EntityAddEditDialog {
 
         // Organization data
         gwtAccountCreator.setOrganizationName(organizationName.getValue());
-        gwtAccountCreator.setOrganizationPersonName(organizationPersonName.getValue());
+        gwtAccountCreator.setOrganizationPersonName(organizationContactName.getValue());
         gwtAccountCreator.setOrganizationEmail(organizationEmail.getValue());
         gwtAccountCreator.setOrganizationPhoneNumber(organizationPhoneNumber.getValue());
         gwtAccountCreator.setOrganizationAddressLine1(organizationAddressLine1.getValue());
@@ -241,16 +236,23 @@ public class AccountAddDialog extends EntityAddEditDialog {
                 gwtAccountCreator,
                 new AsyncCallback<GwtAccount>() {
 
-                    public void onFailure(Throwable caught) {
-                        FailureHandler.handleFormException(formPanel, caught);
+                    @Override
+                    public void onFailure(Throwable cause) {
+                        FailureHandler.handleFormException(formPanel, cause);
                         status.hide();
                         formPanel.getButtonBar().enable();
                         unmask();
-                        hide();
                         submitButton.enable();
                         cancelButton.enable();
+                        if (cause instanceof GwtKapuaException) {
+                            GwtKapuaException gwtCause = (GwtKapuaException) cause;
+                            if (gwtCause.getCode().equals(GwtKapuaErrorCode.DUPLICATE_NAME)) {
+                                accountNameField.markInvalid(gwtCause.getMessage());
+                            }
+                        }
                     }
 
+                    @Override
                     public void onSuccess(GwtAccount account) {
                         ConsoleInfo.display(MSGS.info(), MSGS.accountCreatedConfirmation());
                         hide();

@@ -17,7 +17,7 @@ import com.extjs.gxt.ui.client.event.Listener;
 import com.extjs.gxt.ui.client.widget.layout.FitLayout;
 import org.eclipse.kapua.app.console.module.api.client.resources.icons.KapuaIcon;
 import org.eclipse.kapua.app.console.module.api.shared.model.GwtEntityModel;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
 
 public abstract class KapuaTabItem<M extends GwtEntityModel> extends TabItem {
 
@@ -58,6 +58,14 @@ public abstract class KapuaTabItem<M extends GwtEntityModel> extends TabItem {
             doRefresh();
             dirty = false;
         }
+    }
+
+    public boolean isDirty() {
+        return dirty;
+    }
+
+    public void setDirty(boolean dirty) {
+        this.dirty = dirty;
     }
 
     protected abstract void doRefresh();

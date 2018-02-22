@@ -11,11 +11,6 @@
  *******************************************************************************/
 package org.eclipse.kapua.service.scheduler.trigger.quartz;
 
-import java.util.List;
-import java.util.TimeZone;
-
-import javax.inject.Inject;
-
 import org.eclipse.kapua.KapuaDuplicateNameException;
 import org.eclipse.kapua.KapuaEntityNotFoundException;
 import org.eclipse.kapua.KapuaException;
@@ -24,10 +19,10 @@ import org.eclipse.kapua.commons.model.id.KapuaEid;
 import org.eclipse.kapua.commons.model.query.predicate.AndPredicate;
 import org.eclipse.kapua.commons.model.query.predicate.AttributePredicate;
 import org.eclipse.kapua.commons.util.ArgumentValidator;
-import org.eclipse.kapua.locator.KapuaLocator;
 import org.eclipse.kapua.locator.KapuaProvider;
 import org.eclipse.kapua.model.id.KapuaId;
 import org.eclipse.kapua.model.query.KapuaQuery;
+import org.eclipse.kapua.model.query.predicate.KapuaAttributePredicate.Operator;
 import org.eclipse.kapua.service.authorization.AuthorizationService;
 import org.eclipse.kapua.service.authorization.domain.Domain;
 import org.eclipse.kapua.service.authorization.permission.Actions;
@@ -54,6 +49,9 @@ import org.quartz.TriggerBuilder;
 import org.quartz.TriggerKey;
 import org.quartz.impl.StdSchedulerFactory;
 
+import javax.inject.Inject;
+import java.util.TimeZone;
+
 /**
  * {@link TriggerService} implementation.
  *
@@ -64,7 +62,6 @@ public class TriggerServiceImpl extends AbstractKapuaConfigurableResourceLimited
         implements TriggerService {
 
     private static final Domain SCHEDULER_DOMAIN = new SchedulerDomain();
-    KapuaQuery<Trigger> queryByJobId;
 
     @Inject
     private AuthorizationService authorizationService;
@@ -82,10 +79,9 @@ public class TriggerServiceImpl extends AbstractKapuaConfigurableResourceLimited
     }
 
     @Override
-    public Trigger create(TriggerCreator triggerCreator)
-            throws KapuaException {
+    public Trigger create(TriggerCreator triggerCreator) throws KapuaException {
         //
-        // Validation of the fields
+        // Argument validation
         ArgumentValidator.notNull(triggerCreator, "triggerCreator");
         ArgumentValidator.notNull(triggerCreator.getScopeId(), "triggerCreator.scopeId");
         ArgumentValidator.notEmptyOrNull(triggerCreator.getName(), "triggerCreator.name");
@@ -94,40 +90,18 @@ public class TriggerServiceImpl extends AbstractKapuaConfigurableResourceLimited
         // Check Access
         authorizationService.checkPermission(permissionFactory.newPermission(SCHEDULER_DOMAIN, Actions.write, triggerCreator.getScopeId()));
 
+        //
+        // Check duplicate name
+        TriggerQuery query = new TriggerQueryImpl(triggerCreator.getScopeId());
+        query.setPredicate(new AttributePredicate<>(TriggerPredicates.NAME, triggerCreator.getName()));
+
+        if (count(query) > 0) {
+            throw new KapuaDuplicateNameException(triggerCreator.getName());
+        }
+
+        //
+        // Do create
         return entityManagerSession.onTransactedInsert(em -> {
-
-            // KapuaQuery<Trigger> triggerQuery = queryByJobId;
-            List<TriggerProperty> propertiesList = triggerCreator.getTriggerProperties();
-            String jobId = null;
-            if (!propertiesList.isEmpty()) {
-                for (TriggerProperty triggerProperty : propertiesList) {
-                    if ("jobId".equals(triggerProperty.getName())) {
-                        jobId = triggerProperty.getPropertyValue();
-
-                    }
-                }
-            }
-            KapuaLocator locator = KapuaLocator.getInstance();
-            TriggerFactory triggerFactory = locator.getFactory(TriggerFactory.class);
-            TriggerQuery query = triggerFactory.newQuery(triggerCreator.getScopeId());
-            AttributePredicate<String> kapuaPropertyNameAttributePredicate = new AttributePredicate<>(
-                    TriggerPredicates.TRIGGER_PROPERTIES_NAME, "jobId");
-            AttributePredicate<String> kapuaPropertyValueAttributePredicate = new AttributePredicate<>(
-                    TriggerPredicates.TRIGGER_PROPERTIES_VALUE, jobId);
-            AttributePredicate<String> kapuaPropertyTypeAttributePredicate = new AttributePredicate<>(
-                    TriggerPredicates.TRIGGER_PROPERTIES_TYPE, KapuaId.class.getName());
-            AttributePredicate<String> kapuaTriggerNamePredicate = new AttributePredicate<>(
-                    TriggerPredicates.NAME, triggerCreator.getName());
-            AndPredicate andPredicate = new AndPredicate().and(kapuaPropertyNameAttributePredicate)
-                    .and(kapuaPropertyValueAttributePredicate)
-                    .and(kapuaPropertyTypeAttributePredicate)
-                    .and(kapuaTriggerNamePredicate);
-            query.setPredicate(andPredicate);
-            TriggerListResult result = TriggerDAO.query(em, query);
-            List<Trigger> items = result.getItems();
-            if (!items.isEmpty()) {
-                throw new KapuaDuplicateNameException(triggerCreator.getName());
-            }
 
             Trigger trigger = TriggerDAO.create(em, triggerCreator);
 
@@ -194,10 +168,10 @@ public class TriggerServiceImpl extends AbstractKapuaConfigurableResourceLimited
     }
 
     @Override
-    public Trigger update(Trigger trigger)
-            throws KapuaException {
+    public Trigger update(Trigger trigger) throws KapuaException {
         //
-        // Validation of the fields
+        // Argument validation
+        ArgumentValidator.notNull(trigger.getScopeId(), "trigger.scopeId");
         ArgumentValidator.notNull(trigger.getId(), "trigger.id");
         ArgumentValidator.notEmptyOrNull(trigger.getName(), "trigger.name");
 
@@ -206,33 +180,50 @@ public class TriggerServiceImpl extends AbstractKapuaConfigurableResourceLimited
         authorizationService.checkPermission(permissionFactory.newPermission(SCHEDULER_DOMAIN, Actions.write, trigger.getScopeId()));
 
         //
+        // Check existence
+        if (find(trigger.getScopeId(), trigger.getId()) == null) {
+            throw new KapuaEntityNotFoundException(trigger.getType(), trigger.getId());
+        }
+
+        //
+        // Check duplicate name
+        TriggerQuery query = new TriggerQueryImpl(trigger.getScopeId());
+        query.setPredicate(
+                new AndPredicate(
+                        new AttributePredicate<>(TriggerPredicates.NAME, trigger.getName()),
+                        new AttributePredicate<>(TriggerPredicates.ENTITY_ID, trigger.getId(), Operator.NOT_EQUAL)
+                )
+        );
+
+        if (count(query) > 0) {
+            throw new KapuaDuplicateNameException(trigger.getName());
+        }
+
+        //
         // Do update
-        return entityManagerSession.onTransactedResult(em -> {
-            return TriggerDAO.update(em, trigger);
-        });
+        return entityManagerSession.onTransactedResult(em -> TriggerDAO.update(em, trigger));
     }
 
     @Override
-    public void delete(KapuaId scopeId, KapuaId triggerId)
-            throws KapuaException {
-
+    public void delete(KapuaId scopeId, KapuaId triggerId) throws KapuaException {
         //
-        // Validation of the fields
+        // Argument validation
         ArgumentValidator.notNull(triggerId, "scopeId");
         ArgumentValidator.notNull(scopeId, "triggerId");
 
         //
         // Check Access
-        Actions action = Actions.write;
-        authorizationService.checkPermission(permissionFactory.newPermission(SCHEDULER_DOMAIN, action, scopeId));
+        authorizationService.checkPermission(permissionFactory.newPermission(SCHEDULER_DOMAIN, Actions.delete, scopeId));
 
+        //
+        // Check existence
+        if (find(scopeId, triggerId) == null) {
+            throw new KapuaEntityNotFoundException(Trigger.TYPE, triggerId);
+        }
+
+        //
+        // Do delete
         entityManagerSession.onTransactedAction(em -> {
-            // Entity needs to be loaded in the context of the same EntityManger to be able to delete it afterwards
-            Trigger triggerx = TriggerDAO.find(em, triggerId);
-            if (triggerx == null) {
-                throw new KapuaEntityNotFoundException(Trigger.TYPE, triggerId);
-            }
-
             TriggerDAO.delete(em, triggerId);
 
             try {
@@ -241,22 +232,18 @@ public class TriggerServiceImpl extends AbstractKapuaConfigurableResourceLimited
 
                 TriggerKey triggerKey = TriggerKey.triggerKey(triggerId.toCompactId(), scopeId.toCompactId());
 
-                // org.quartz.Trigger trigger = scheduler.getTrigger(triggerKey);
-
                 scheduler.unscheduleJob(triggerKey);
 
             } catch (SchedulerException se) {
-                se.printStackTrace();
                 throw new RuntimeException(se);
             }
         });
     }
 
     @Override
-    public Trigger find(KapuaId scopeId, KapuaId triggerId)
-            throws KapuaException {
+    public Trigger find(KapuaId scopeId, KapuaId triggerId) throws KapuaException {
         //
-        // Validation of the fields
+        // Argument validation
         ArgumentValidator.notNull(scopeId, "scopeId");
         ArgumentValidator.notNull(triggerId, "triggerId");
 
@@ -265,13 +252,14 @@ public class TriggerServiceImpl extends AbstractKapuaConfigurableResourceLimited
         authorizationService.checkPermission(permissionFactory.newPermission(SCHEDULER_DOMAIN, Actions.read, scopeId));
 
         //
-        // Make sure trigger exists
+        // Do find
         return entityManagerSession.onResult(em -> TriggerDAO.find(em, triggerId));
     }
 
     @Override
-    public TriggerListResult query(KapuaQuery<Trigger> query)
-            throws KapuaException {
+    public TriggerListResult query(KapuaQuery<Trigger> query) throws KapuaException {
+        //
+        // Argument validation
         ArgumentValidator.notNull(query, "query");
         ArgumentValidator.notNull(query.getScopeId(), "query.scopeId");
 
@@ -279,12 +267,15 @@ public class TriggerServiceImpl extends AbstractKapuaConfigurableResourceLimited
         // Check Access
         authorizationService.checkPermission(permissionFactory.newPermission(SCHEDULER_DOMAIN, Actions.read, query.getScopeId()));
 
+        //
+        // Do query
         return entityManagerSession.onResult(em -> TriggerDAO.query(em, query));
     }
 
     @Override
-    public long count(KapuaQuery<Trigger> query)
-            throws KapuaException {
+    public long count(KapuaQuery<Trigger> query) throws KapuaException {
+        //
+        // Argument validation
         ArgumentValidator.notNull(query, "query");
         ArgumentValidator.notNull(query.getScopeId(), "query.scopeId");
 
@@ -292,6 +283,8 @@ public class TriggerServiceImpl extends AbstractKapuaConfigurableResourceLimited
         // Check Access
         authorizationService.checkPermission(permissionFactory.newPermission(SCHEDULER_DOMAIN, Actions.read, query.getScopeId()));
 
+        //
+        // Do count
         return entityManagerSession.onResult(em -> TriggerDAO.count(em, query));
     }
 

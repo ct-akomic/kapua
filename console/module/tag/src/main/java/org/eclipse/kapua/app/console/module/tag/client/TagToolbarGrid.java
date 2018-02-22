@@ -13,13 +13,17 @@ package org.eclipse.kapua.app.console.module.tag.client;
 
 import org.eclipse.kapua.app.console.module.api.client.ui.dialog.KapuaDialog;
 import org.eclipse.kapua.app.console.module.api.client.ui.widget.EntityCRUDToolbar;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
 import org.eclipse.kapua.app.console.module.tag.shared.model.GwtTag;
 
 public class TagToolbarGrid extends EntityCRUDToolbar<GwtTag> {
 
     public TagToolbarGrid(GwtSession currentSession) {
         super(currentSession);
+    }
+
+    public TagToolbarGrid(GwtSession currentSession, boolean slaveEntity) {
+        super(currentSession, slaveEntity);
     }
 
     @Override

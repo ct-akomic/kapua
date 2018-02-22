@@ -26,7 +26,7 @@ import org.eclipse.kapua.app.console.module.account.client.messages.ConsoleAccou
 import org.eclipse.kapua.app.console.module.account.shared.model.GwtAccount;
 import org.eclipse.kapua.app.console.module.api.client.ui.tab.KapuaTabItem;
 import org.eclipse.kapua.app.console.module.api.client.ui.view.AbstractView;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
 
 public class AccountDetailsView extends AbstractView {
 
@@ -55,6 +55,7 @@ public class AccountDetailsView extends AbstractView {
         this.selectedAccount = selectedAccount;
     }
 
+    @Override
     protected void onRender(Element parent, int index) {
         super.onRender(parent, index);
 
@@ -82,10 +83,9 @@ public class AccountDetailsView extends AbstractView {
         AccountTabConfiguration settingsTabItem = new AccountTabConfiguration(currentSession, this);
         settingsTabItem.setEntity(selectedAccount);
 
-        AccountDetailsTabDescription accountDescriptionTab = new AccountDetailsTabDescription(currentSession, this, centerAccountView);
+        AccountDetailsTabDescription accountDescriptionTab = new AccountDetailsTabDescription(currentSession);
         settingsTabItem.setDescriptionTab(accountDescriptionTab);
-        accountDescriptionTab.setAccount(selectedAccount);
-        accountDescriptionTab.initTable();
+        accountDescriptionTab.setEntity(selectedAccount);
         tabPanel.add(accountDescriptionTab);
         tabPanel.add(settingsTabItem);
         bodyLayoutContainer.add(tabPanel, northData);
@@ -95,8 +95,8 @@ public class AccountDetailsView extends AbstractView {
     }
 
     public void refresh() {
-        for(TabItem item : tabPanel.getItems()) {
-            KapuaTabItem kapuaTabItem = (KapuaTabItem)item;
+        for (TabItem item : tabPanel.getItems()) {
+            KapuaTabItem kapuaTabItem = (KapuaTabItem) item;
             kapuaTabItem.refresh();
         }
     }

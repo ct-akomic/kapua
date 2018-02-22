@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 Eurotech and/or its affiliates and others
+ * Copyright (c) 2017, 2018 Eurotech and/or its affiliates and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -44,16 +44,18 @@ import org.eclipse.kapua.app.console.module.api.client.resources.icons.IconSet;
 import org.eclipse.kapua.app.console.module.api.client.resources.icons.KapuaIcon;
 import org.eclipse.kapua.app.console.module.api.client.ui.button.RefreshButton;
 import org.eclipse.kapua.app.console.module.api.client.ui.tab.KapuaTabItem;
+import org.eclipse.kapua.app.console.module.api.client.util.ConsoleInfo;
 import org.eclipse.kapua.app.console.module.api.client.util.FailureHandler;
 import org.eclipse.kapua.app.console.module.api.client.util.KapuaLoadListener;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
 import org.eclipse.kapua.app.console.module.api.shared.model.GwtXSRFToken;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
 import org.eclipse.kapua.app.console.module.api.shared.service.GwtSecurityTokenService;
 import org.eclipse.kapua.app.console.module.api.shared.service.GwtSecurityTokenServiceAsync;
 import org.eclipse.kapua.app.console.module.device.client.device.DeviceView;
 import org.eclipse.kapua.app.console.module.device.client.messages.ConsoleDeviceMessages;
 import org.eclipse.kapua.app.console.module.device.shared.model.GwtDevice;
 import org.eclipse.kapua.app.console.module.device.shared.model.device.management.bundles.GwtBundle;
+import org.eclipse.kapua.app.console.module.device.shared.model.permission.DeviceManagementSessionPermission;
 import org.eclipse.kapua.app.console.module.device.shared.service.GwtDeviceManagementService;
 import org.eclipse.kapua.app.console.module.device.shared.service.GwtDeviceManagementServiceAsync;
 
@@ -94,9 +96,9 @@ public class DeviceTabBundles extends KapuaTabItem<GwtDevice> {
     public void setEntity(GwtDevice gwtDevice) {
         super.setEntity(gwtDevice);
 
-        setEnabled(gwtDevice != null && currentSession.hasDeviceManageReadPermission() &&
-                (gwtDevice.hasApplication(GwtDevice.GwtDeviceApplication.APP_DEPLOY_V1) ||
-                        (gwtDevice.hasApplication(GwtDevice.GwtDeviceApplication.APP_DEPLOY_V2))));
+        setEnabled(gwtDevice != null &&
+                currentSession.hasPermission(DeviceManagementSessionPermission.read()) &&
+                (gwtDevice.hasApplication(GwtDevice.GwtDeviceApplication.APP_DEPLOY_V1) || (gwtDevice.hasApplication(GwtDevice.GwtDeviceApplication.APP_DEPLOY_V2))));
 
         doRefresh();
     }
@@ -391,7 +393,7 @@ public class DeviceTabBundles extends KapuaTabItem<GwtDevice> {
         public void loaderLoadException(LoadEvent le) {
 
             if (le.exception != null) {
-                FailureHandler.handle(le.exception);
+                ConsoleInfo.display(MSGS.popupError(), DEVICE_MSGS.deviceConnectionError());
             }
             startButton.disable();
             stopButton.disable();

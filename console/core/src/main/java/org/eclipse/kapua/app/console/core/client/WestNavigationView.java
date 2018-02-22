@@ -16,6 +16,9 @@ import com.extjs.gxt.ui.client.Style.Scroll;
 import com.extjs.gxt.ui.client.Style.SelectionMode;
 import com.extjs.gxt.ui.client.data.BaseModelData;
 import com.extjs.gxt.ui.client.data.ModelData;
+import com.extjs.gxt.ui.client.event.ComponentEvent;
+import com.extjs.gxt.ui.client.event.Events;
+import com.extjs.gxt.ui.client.event.Listener;
 import com.extjs.gxt.ui.client.event.SelectionChangedEvent;
 import com.extjs.gxt.ui.client.event.SelectionChangedListener;
 import com.extjs.gxt.ui.client.store.ListStore;
@@ -36,20 +39,24 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Widget;
+import org.eclipse.kapua.app.console.module.api.client.ui.panel.EntityFilterPanel;
+import org.eclipse.kapua.app.console.module.api.client.ui.view.AbstractEntityView;
 import org.eclipse.kapua.app.console.module.api.client.ui.view.descriptor.MainViewDescriptor;
 import org.eclipse.kapua.app.console.module.api.shared.service.GwtConsoleServiceAsync;
 import org.eclipse.kapua.app.console.module.account.client.AccountDetailsView;
+import org.eclipse.kapua.app.console.module.account.shared.model.GwtAccount;
+import org.eclipse.kapua.app.console.module.account.shared.service.GwtAccountService;
+import org.eclipse.kapua.app.console.module.account.shared.service.GwtAccountServiceAsync;
 import org.eclipse.kapua.app.console.module.api.client.messages.ConsoleMessages;
 import org.eclipse.kapua.app.console.module.api.client.resources.icons.IconSet;
 import org.eclipse.kapua.app.console.module.api.client.resources.icons.KapuaIcon;
 import org.eclipse.kapua.app.console.module.api.client.ui.panel.ContentPanel;
 import org.eclipse.kapua.app.console.module.api.client.ui.view.AbstractView;
+import org.eclipse.kapua.app.console.module.api.client.ui.view.descriptor.MainViewDescriptor;
 import org.eclipse.kapua.app.console.module.api.client.util.FailureHandler;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
-import org.eclipse.kapua.app.console.module.account.shared.model.GwtAccount;
-import org.eclipse.kapua.app.console.module.account.shared.service.GwtAccountService;
-import org.eclipse.kapua.app.console.module.account.shared.service.GwtAccountServiceAsync;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
 import org.eclipse.kapua.app.console.module.api.shared.service.GwtConsoleService;
+import org.eclipse.kapua.app.console.module.api.shared.service.GwtConsoleServiceAsync;
 
 import java.util.Arrays;
 import java.util.List;
@@ -59,6 +66,7 @@ public class WestNavigationView extends LayoutContainer {
     private static final ConsoleMessages MSGS = GWT.create(ConsoleMessages.class);
 
     private final LayoutContainer centerPanel;
+    private final KapuaCloudConsole kapuaCloudConsole;
     private ContentPanel cloudResourcesPanel;
     private ContentPanel accordionPanel;
     private ContentPanel accountManagementPanel;
@@ -77,14 +85,15 @@ public class WestNavigationView extends LayoutContainer {
 
     private static final GwtConsoleServiceAsync CONSOLE_SERVICE = GWT.create(GwtConsoleService.class);
 
-    public WestNavigationView(GwtSession currentSession, LayoutContainer center) {
+    public WestNavigationView(GwtSession currentSession, LayoutContainer center, KapuaCloudConsole kapuaCloudConsole) {
         this.currentSession = currentSession;
+        this.kapuaCloudConsole = kapuaCloudConsole;
         centerPanel = center;
         dashboardSelected = true;
     }
 
     @Override
-    protected void onRender(final Element parent, int index) {
+    protected void onRender(Element parent, int index) {
         super.onRender(parent, index);
 
         CONSOLE_SERVICE.getCustomEntityViews(new AsyncCallback<List<MainViewDescriptor>>() {
@@ -154,10 +163,12 @@ public class WestNavigationView extends LayoutContainer {
                     public void selectionChanged(SelectionChangedEvent<ModelData> se) {
                         ModelData selected = se.getSelectedItem();
                         if (selected == null) {
+                            kapuaCloudConsole.getFilterPanel().hide();
                             return;
                         }
 
                         if (dashboardSelected && (selected.get("id")).equals("welcome")) {
+                            kapuaCloudConsole.getFilterPanel().hide();
                             return;
                         }
 
@@ -170,6 +181,8 @@ public class WestNavigationView extends LayoutContainer {
 
                         String selectedId = selected.get("id");
                         if ("mysettings".equals(selectedId)) {
+                            kapuaCloudConsole.getFilterPanel().hide();
+
                             // TODO generalize!
                             GWT_ACCOUNT_SERVICE.find(currentSession.getSelectedAccountId(), new AsyncCallback<GwtAccount>() {
 
@@ -199,10 +212,25 @@ public class WestNavigationView extends LayoutContainer {
                                 if (viewDescriptor.getViewId().equals(selectedId)) {
                                     panel.setIcon(new KapuaIcon(viewDescriptor.getIcon()));
                                     panel.setHeading(viewDescriptor.getName());
-                                    panel.add((AbstractView) viewDescriptor.getViewInstance(currentSession));
 
+                                    AbstractView view = (AbstractView) viewDescriptor.getViewInstance(currentSession);
+                                    panel.add(view);
+
+                                    if (view instanceof AbstractEntityView) {
+                                        AbstractEntityView abstractEntityView = (AbstractEntityView) view;
+                                        EntityFilterPanel filterPanel = abstractEntityView.getEntityFilterPanel(abstractEntityView, currentSession);
+                                        if (filterPanel != null) {
+                                            kapuaCloudConsole.setFilterPanel(filterPanel, abstractEntityView);
+                                            kapuaCloudConsole.getFilterPanel().show();
+                                        } else {
+                                            kapuaCloudConsole.getFilterPanel().hide();
+                                        }
+                                    } else {
+                                        kapuaCloudConsole.getFilterPanel().hide();
+                                    }
                                     centerPanel.add(panel);
                                     centerPanel.layout();
+                                    break;
                                 }
                             }
                         }
@@ -211,10 +239,18 @@ public class WestNavigationView extends LayoutContainer {
                     }
                 });
 
+                cloudResourcesTreeGrid.addListener(Events.ViewReady, new Listener<ComponentEvent>() {
+
+                    @Override
+                    public void handleEvent(ComponentEvent be) {
+                        cloudResourcesTreeGrid.getSelectionModel().select(0, false);
+                    }
+                });
+
                 if (additionalViewDescriptors.size() > 0) {
                     centerPanel.removeAll();
 
-                    final ContentPanel panel = new ContentPanel(new FitLayout());
+                    ContentPanel panel = new ContentPanel(new FitLayout());
 
                     MainViewDescriptor firstView = additionalViewDescriptors.get(0);
                     panel.setIcon(new KapuaIcon(firstView.getIcon()));
@@ -224,9 +260,6 @@ public class WestNavigationView extends LayoutContainer {
                     centerPanel.add(panel);
                     centerPanel.layout();
                 }
-
-                ColumnConfig name1 = new ColumnConfig("name", "Name", 200);
-                name1.setRenderer(treeCellRenderer);
 
                 cloudResourcesPanel.add(cloudResourcesTreeGrid);
                 accordionPanel.add(cloudResourcesPanel);

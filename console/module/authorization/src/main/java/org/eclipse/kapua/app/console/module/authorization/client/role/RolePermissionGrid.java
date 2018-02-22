@@ -11,19 +11,6 @@
  *******************************************************************************/
 package org.eclipse.kapua.app.console.module.authorization.client.role;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.eclipse.kapua.app.console.module.api.client.messages.ConsoleMessages;
-import org.eclipse.kapua.app.console.module.api.client.ui.grid.EntityGrid;
-import org.eclipse.kapua.app.console.module.api.client.ui.view.AbstractEntityView;
-import org.eclipse.kapua.app.console.module.api.client.ui.widget.EntityCRUDToolbar;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
-import org.eclipse.kapua.app.console.module.authorization.client.messages.ConsoleRoleMessages;
-import org.eclipse.kapua.app.console.module.authorization.shared.model.GwtRole;
-import org.eclipse.kapua.app.console.module.authorization.shared.model.GwtRolePermission;
-import org.eclipse.kapua.app.console.module.api.shared.model.query.GwtQuery;
-
 import com.extjs.gxt.ui.client.data.BasePagingLoadResult;
 import com.extjs.gxt.ui.client.data.PagingLoadConfig;
 import com.extjs.gxt.ui.client.data.PagingLoadResult;
@@ -35,8 +22,21 @@ import com.extjs.gxt.ui.client.widget.grid.Grid;
 import com.extjs.gxt.ui.client.widget.grid.GridCellRenderer;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import org.eclipse.kapua.app.console.module.api.client.messages.ConsoleMessages;
+import org.eclipse.kapua.app.console.module.api.client.ui.grid.EntityGrid;
+import org.eclipse.kapua.app.console.module.api.client.ui.view.AbstractEntityView;
+import org.eclipse.kapua.app.console.module.api.client.ui.widget.EntityCRUDToolbar;
+import org.eclipse.kapua.app.console.module.api.shared.model.query.GwtQuery;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
+import org.eclipse.kapua.app.console.module.authorization.client.messages.ConsoleRoleMessages;
+import org.eclipse.kapua.app.console.module.authorization.shared.model.GwtRole;
+import org.eclipse.kapua.app.console.module.authorization.shared.model.GwtRolePermission;
+import org.eclipse.kapua.app.console.module.authorization.shared.model.permission.DomainSessionPermission;
 import org.eclipse.kapua.app.console.module.authorization.shared.service.GwtRoleService;
 import org.eclipse.kapua.app.console.module.authorization.shared.service.GwtRoleServiceAsync;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class RolePermissionGrid extends EntityGrid<GwtRolePermission> {
 
@@ -109,11 +109,11 @@ public class RolePermissionGrid extends EntityGrid<GwtRolePermission> {
         columnConfig.setSortable(false);
         columnConfigs.add(columnConfig);
 
-        columnConfig = new ColumnConfig("userName", ROLE_MSGS.gridRolePermissionColumnHeaderCreatedBy(), 100);
-        columnConfig.setSortable(false);
+        columnConfig = new ColumnConfig("createdOnFormatted", ROLE_MSGS.gridRolePermissionColumnHeaderCreatedOn(), 100);
         columnConfigs.add(columnConfig);
 
-        columnConfig = new ColumnConfig("createdOnFormatted", ROLE_MSGS.gridRolePermissionColumnHeaderCreatedOn(), 100);
+        columnConfig = new ColumnConfig("createdByName", ROLE_MSGS.gridRolePermissionColumnHeaderCreatedBy(), 100);
+        columnConfig.setSortable(false);
         columnConfigs.add(columnConfig);
 
         return columnConfigs;
@@ -129,7 +129,7 @@ public class RolePermissionGrid extends EntityGrid<GwtRolePermission> {
     @Override
     protected void selectionChangedEvent(GwtRolePermission selectedItem) {
         super.selectionChangedEvent(selectedItem);
-        rolePermissionToolBar.getAddEntityButton().setEnabled(currentSession.hasDomainReadPermission());
+        rolePermissionToolBar.getAddEntityButton().setEnabled(currentSession.hasPermission(DomainSessionPermission.read()));
         if (selectedItem == null) {
             rolePermissionToolBar.getDeleteEntityButton().disable();
         } else {

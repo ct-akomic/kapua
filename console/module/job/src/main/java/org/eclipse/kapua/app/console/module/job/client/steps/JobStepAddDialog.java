@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 Eurotech and/or its affiliates and others
+ * Copyright (c) 2017, 2018 Eurotech and/or its affiliates and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,9 +10,6 @@
  *     Eurotech - initial API and implementation
  *******************************************************************************/
 package org.eclipse.kapua.app.console.module.job.client.steps;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import com.extjs.gxt.ui.client.data.BaseListLoader;
 import com.extjs.gxt.ui.client.data.ListLoadResult;
@@ -33,22 +30,28 @@ import com.extjs.gxt.ui.client.widget.form.TextField;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import org.eclipse.kapua.app.console.module.api.client.GwtKapuaErrorCode;
+import org.eclipse.kapua.app.console.module.api.client.GwtKapuaException;
 import org.eclipse.kapua.app.console.module.api.client.ui.dialog.entity.EntityAddEditDialog;
 import org.eclipse.kapua.app.console.module.api.client.ui.panel.FormPanel;
 import org.eclipse.kapua.app.console.module.api.client.ui.widget.KapuaTextField;
 import org.eclipse.kapua.app.console.module.api.client.util.DialogUtils;
+import org.eclipse.kapua.app.console.module.api.client.util.FailureHandler;
 import org.eclipse.kapua.app.console.module.api.client.util.KapuaSafeHtmlUtils;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
 import org.eclipse.kapua.app.console.module.job.client.messages.ConsoleJobMessages;
-import org.eclipse.kapua.app.console.module.job.shared.model.job.GwtJobStep;
-import org.eclipse.kapua.app.console.module.job.shared.model.job.GwtJobStepCreator;
-import org.eclipse.kapua.app.console.module.job.shared.model.job.GwtJobStepDefinition;
-import org.eclipse.kapua.app.console.module.job.shared.model.job.GwtJobStepDefinitionQuery;
-import org.eclipse.kapua.app.console.module.job.shared.model.job.GwtJobStepProperty;
+import org.eclipse.kapua.app.console.module.job.shared.model.GwtJobStep;
+import org.eclipse.kapua.app.console.module.job.shared.model.GwtJobStepCreator;
+import org.eclipse.kapua.app.console.module.job.shared.model.GwtJobStepDefinition;
+import org.eclipse.kapua.app.console.module.job.shared.model.GwtJobStepDefinitionQuery;
+import org.eclipse.kapua.app.console.module.job.shared.model.GwtJobStepProperty;
 import org.eclipse.kapua.app.console.module.job.shared.service.GwtJobStepDefinitionService;
 import org.eclipse.kapua.app.console.module.job.shared.service.GwtJobStepDefinitionServiceAsync;
 import org.eclipse.kapua.app.console.module.job.shared.service.GwtJobStepService;
 import org.eclipse.kapua.app.console.module.job.shared.service.GwtJobStepServiceAsync;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class JobStepAddDialog extends EntityAddEditDialog {
 
@@ -88,7 +91,7 @@ public class JobStepAddDialog extends EntityAddEditDialog {
     public void createBody() {
         FormPanel jobStepFormPanel = new FormPanel(FORM_LABEL_WIDTH);
 
-        jobStepName.setFieldLabel(JOB_MSGS.dialogAddStepJobNameLabel());
+        jobStepName.setFieldLabel("* " + JOB_MSGS.dialogAddStepJobNameLabel());
         jobStepName.setAllowBlank(false);
 
         jobStepDescription.setFieldLabel(JOB_MSGS.dialogAddStepJobDescriptionLabel());
@@ -108,7 +111,7 @@ public class JobStepAddDialog extends EntityAddEditDialog {
         ListStore<GwtJobStepDefinition> jobStepDefinitionStore = new ListStore<GwtJobStepDefinition>(jobStepDefinitionLoader);
         jobStepDefinitionCombo.setStore(jobStepDefinitionStore);
         jobStepDefinitionCombo.setDisplayField("jobStepDefinitionName");
-        jobStepDefinitionCombo.setFieldLabel(JOB_MSGS.dialogAddStepDefinitionCombo());
+        jobStepDefinitionCombo.setFieldLabel("* " + JOB_MSGS.dialogAddStepDefinitionCombo());
         jobStepDefinitionCombo.setEmptyText(JOB_MSGS.dialogAddStepDefinitionComboEmpty());
         jobStepDefinitionCombo.setEditable(false);
         jobStepDefinitionCombo.setAllowBlank(false);
@@ -163,16 +166,19 @@ public class JobStepAddDialog extends EntityAddEditDialog {
 
             @Override
             public void onFailure(Throwable cause) {
+                exitStatus = false;
+                FailureHandler.handleFormException(formPanel, cause);
+                status.hide();
+                formPanel.getButtonBar().enable();
                 unmask();
-
                 submitButton.enable();
                 cancelButton.enable();
-                status.hide();
-
-                exitStatus = false;
-                exitMessage = JOB_MSGS.dialogAddStepError(cause.getLocalizedMessage());
-
-                hide();
+                if (cause instanceof GwtKapuaException) {
+                    GwtKapuaException gwtCause = (GwtKapuaException) cause;
+                    if (gwtCause.getCode().equals(GwtKapuaErrorCode.DUPLICATE_NAME)) {
+                        jobStepName.markInvalid(gwtCause.getMessage());
+                    }
+                }
             }
         });
     }
@@ -203,9 +209,9 @@ public class JobStepAddDialog extends EntityAddEditDialog {
                 jobStepPropertiesPanel.add(textField);
             } else if (
                     propertyType.equals(Long.class.getName()) ||
-                    propertyType.equals(Integer.class.getName()) ||
-                    propertyType.equals(Float.class.getName()) ||
-                    propertyType.equals(Double.class.getName())) {
+                            propertyType.equals(Integer.class.getName()) ||
+                            propertyType.equals(Float.class.getName()) ||
+                            propertyType.equals(Double.class.getName())) {
                 NumberField numberField = new NumberField();
                 numberField.setFieldLabel(property.getPropertyName());
                 numberField.setEmptyText(KapuaSafeHtmlUtils.htmlUnescape(property.getPropertyValue()));

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 Eurotech and/or its affiliates and others
+ * Copyright (c) 2017, 2018 Eurotech and/or its affiliates and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,9 +24,9 @@ import org.eclipse.kapua.app.console.module.api.shared.model.GwtXSRFToken;
 import org.eclipse.kapua.app.console.module.api.shared.util.GwtKapuaCommonsModelConverter;
 import org.eclipse.kapua.app.console.module.authorization.shared.model.GwtAccessRoleQuery;
 import org.eclipse.kapua.app.console.module.authorization.shared.util.GwtKapuaAuthorizationModelConverter;
-import org.eclipse.kapua.app.console.module.user.shared.model.user.GwtUser;
-import org.eclipse.kapua.app.console.module.user.shared.model.user.GwtUserCreator;
-import org.eclipse.kapua.app.console.module.user.shared.model.user.GwtUserQuery;
+import org.eclipse.kapua.app.console.module.user.shared.model.GwtUser;
+import org.eclipse.kapua.app.console.module.user.shared.model.GwtUserCreator;
+import org.eclipse.kapua.app.console.module.user.shared.model.GwtUserQuery;
 import org.eclipse.kapua.app.console.module.user.shared.service.GwtUserService;
 import org.eclipse.kapua.app.console.module.user.shared.util.GwtKapuaUserModelConverter;
 import org.eclipse.kapua.app.console.module.user.shared.util.KapuaGwtUserModelConverter;
@@ -378,7 +378,6 @@ public class GwtUserServiceImpl extends KapuaRemoteServiceServlet implements Gwt
                 gwtUserDescription.add(new GwtGroupedNVPair("userInfo", "userCreatedBy", createdUser.getName()));
                 gwtUserDescription.add(new GwtGroupedNVPair("userInfo", "userModifiedOn", user.getModifiedOn()));
                 gwtUserDescription.add(new GwtGroupedNVPair("userInfo", "userModifiedBy", modifiedUser.getName()));
-                gwtUserDescription.add(new GwtGroupedNVPair("userInfo", "userExpirationDate", user.getExpirationDate()));
             }
         } catch (Exception e) {
             KapuaExceptionHandler.handle(e);

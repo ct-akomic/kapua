@@ -11,19 +11,6 @@
  *******************************************************************************/
 package org.eclipse.kapua.app.console.module.account.client;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.eclipse.kapua.app.console.module.account.client.messages.ConsoleAccountMessages;
-import org.eclipse.kapua.app.console.module.account.client.toolbar.AccountGridToolbar;
-import org.eclipse.kapua.app.console.module.api.client.ui.grid.EntityGrid;
-import org.eclipse.kapua.app.console.module.api.client.ui.view.AbstractEntityView;
-import org.eclipse.kapua.app.console.module.api.client.ui.widget.EntityCRUDToolbar;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
-import org.eclipse.kapua.app.console.module.account.shared.model.GwtAccount;
-import org.eclipse.kapua.app.console.module.account.shared.model.GwtAccountQuery;
-import org.eclipse.kapua.app.console.module.api.shared.model.query.GwtQuery;
-
 import com.extjs.gxt.ui.client.Style.HorizontalAlignment;
 import com.extjs.gxt.ui.client.data.PagingLoadConfig;
 import com.extjs.gxt.ui.client.data.PagingLoadResult;
@@ -31,12 +18,24 @@ import com.extjs.gxt.ui.client.data.RpcProxy;
 import com.extjs.gxt.ui.client.widget.grid.ColumnConfig;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import org.eclipse.kapua.app.console.module.account.client.messages.ConsoleAccountMessages;
+import org.eclipse.kapua.app.console.module.account.client.toolbar.AccountGridToolbar;
+import org.eclipse.kapua.app.console.module.account.shared.model.GwtAccount;
+import org.eclipse.kapua.app.console.module.account.shared.model.GwtAccountQuery;
 import org.eclipse.kapua.app.console.module.account.shared.service.GwtAccountService;
 import org.eclipse.kapua.app.console.module.account.shared.service.GwtAccountServiceAsync;
+import org.eclipse.kapua.app.console.module.api.client.ui.grid.EntityGrid;
+import org.eclipse.kapua.app.console.module.api.client.ui.view.AbstractEntityView;
+import org.eclipse.kapua.app.console.module.api.client.ui.widget.EntityCRUDToolbar;
+import org.eclipse.kapua.app.console.module.api.shared.model.query.GwtQuery;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class AccountGrid extends EntityGrid<GwtAccount> {
 
-    private static final ConsoleAccountMessages MSGS = GWT.create(ConsoleAccountMessages.class);
+    private static final ConsoleAccountMessages ACCOUNT_MSGS = GWT.create(ConsoleAccountMessages.class);
 
     private final GwtAccountServiceAsync gwtAccountService = GWT.create(GwtAccountService.class);
 
@@ -88,25 +87,30 @@ public class AccountGrid extends EntityGrid<GwtAccount> {
         List<ColumnConfig> configs = new ArrayList<ColumnConfig>();
 
         column = new ColumnConfig("name", 120);
-        column.setHeader(MSGS.accountTableName());
+        column.setHeader(ACCOUNT_MSGS.accountTableName());
         column.setWidth(150);
         configs.add(column);
 
         column = new ColumnConfig("orgName", 120);
-        column.setHeader(MSGS.accountTableOrgName());
+        column.setHeader(ACCOUNT_MSGS.accountTableOrgName());
         column.setWidth(150);
         column.setSortable(false);
         configs.add(column);
 
         column = new ColumnConfig("orgEmail", 120);
-        column.setHeader(MSGS.accountTableOrgEmail());
+        column.setHeader(ACCOUNT_MSGS.accountTableOrgEmail());
         column.setWidth(150);
         column.setSortable(false);
         configs.add(column);
 
-        column = new ColumnConfig("modifiedOnFormatted", MSGS.accountTableModifiedOn(), 130);
+        column = new ColumnConfig("modifiedOnFormatted", ACCOUNT_MSGS.accountTableModifiedOn(), 130);
         column.setAlignment(HorizontalAlignment.CENTER);
         configs.add(column);
+
+        column = new ColumnConfig("modifiedByName", ACCOUNT_MSGS.accountTableModifiedBy(), 130);
+        column.setAlignment(HorizontalAlignment.CENTER);
+        configs.add(column);
+
         return configs;
     }
 

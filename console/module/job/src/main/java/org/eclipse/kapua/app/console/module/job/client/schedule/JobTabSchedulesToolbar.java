@@ -14,15 +14,15 @@ package org.eclipse.kapua.app.console.module.job.client.schedule;
 import com.google.gwt.user.client.Element;
 import org.eclipse.kapua.app.console.module.api.client.ui.dialog.KapuaDialog;
 import org.eclipse.kapua.app.console.module.api.client.ui.widget.EntityCRUDToolbar;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
-import org.eclipse.kapua.app.console.module.job.shared.model.job.GwtTrigger;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
+import org.eclipse.kapua.app.console.module.job.shared.model.scheduler.GwtTrigger;
 
 public class JobTabSchedulesToolbar extends EntityCRUDToolbar<GwtTrigger> {
 
     private String jobId;
 
     public JobTabSchedulesToolbar(GwtSession currentSession) {
-        super(currentSession);
+        super(currentSession, true);
     }
 
     public String getJobId() {

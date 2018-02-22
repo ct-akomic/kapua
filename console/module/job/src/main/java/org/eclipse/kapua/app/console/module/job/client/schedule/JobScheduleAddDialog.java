@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 Eurotech and/or its affiliates and others
+ * Copyright (c) 2017, 2018 Eurotech and/or its affiliates and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -18,16 +18,19 @@ import com.extjs.gxt.ui.client.widget.form.TimeField;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.i18n.client.DateTimeFormat;
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import org.eclipse.kapua.app.console.module.api.client.GwtKapuaErrorCode;
+import org.eclipse.kapua.app.console.module.api.client.GwtKapuaException;
 import org.eclipse.kapua.app.console.module.api.client.messages.ValidationMessages;
 import org.eclipse.kapua.app.console.module.api.client.ui.dialog.entity.EntityAddEditDialog;
 import org.eclipse.kapua.app.console.module.api.client.ui.panel.FormPanel;
 import org.eclipse.kapua.app.console.module.api.client.util.ConsoleInfo;
 import org.eclipse.kapua.app.console.module.api.client.util.DialogUtils;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
+import org.eclipse.kapua.app.console.module.api.client.util.FailureHandler;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
 import org.eclipse.kapua.app.console.module.job.client.messages.ConsoleJobMessages;
-import org.eclipse.kapua.app.console.module.job.shared.model.job.GwtTrigger;
-import org.eclipse.kapua.app.console.module.job.shared.model.job.GwtTriggerCreator;
-import org.eclipse.kapua.app.console.module.job.shared.model.job.GwtTriggerProperty;
+import org.eclipse.kapua.app.console.module.job.shared.model.scheduler.GwtTrigger;
+import org.eclipse.kapua.app.console.module.job.shared.model.scheduler.GwtTriggerCreator;
+import org.eclipse.kapua.app.console.module.job.shared.model.scheduler.GwtTriggerProperty;
 import org.eclipse.kapua.app.console.module.job.shared.service.GwtTriggerService;
 import org.eclipse.kapua.app.console.module.job.shared.service.GwtTriggerServiceAsync;
 
@@ -57,13 +60,17 @@ public class JobScheduleAddDialog extends EntityAddEditDialog {
 
         triggerName = new TextField<String>();
         startsOn = new DateField();
+        startsOn.getPropertyEditor().setFormat(DateTimeFormat.getFormat("dd/MM/yyyy"));
         startsOnTime = new TimeField();
+        startsOnTime.setEditable(false);
         endsOn = new DateField();
+        endsOn.getPropertyEditor().setFormat(DateTimeFormat.getFormat("dd/MM/yyyy"));
         endsOnTime = new TimeField();
+        endsOnTime.setEditable(false);
         retryInterval = new NumberField();
         cronExpression = new TextField<String>();
 
-        DialogUtils.resizeDialog(this, 600, 500);
+        DialogUtils.resizeDialog(this, 400, 300);
     }
 
     @Override
@@ -71,35 +78,37 @@ public class JobScheduleAddDialog extends EntityAddEditDialog {
         FormPanel mainPanel = new FormPanel(150);
 
         triggerName.setAllowBlank(false);
-        triggerName.setFieldLabel(JOB_MSGS.dialogAddScheduleScheduleNameLabel());
+        triggerName.setFieldLabel("* " + JOB_MSGS.dialogAddScheduleScheduleNameLabel());
         mainPanel.add(triggerName);
 
-        startsOn.setFieldLabel(JOB_MSGS.dialogAddScheduleStartsOnLabel());
+        startsOn.setFieldLabel("* " + JOB_MSGS.dialogAddScheduleStartsOnLabel());
         startsOn.setFormatValue(true);
         startsOn.setAllowBlank(false);
         startsOn.getPropertyEditor().setFormat(DateTimeFormat.getFormat("dd/MM/yyyy"));
         mainPanel.add(startsOn);
 
         startsOnTime.setAllowBlank(false);
-        startsOnTime.setFieldLabel(JOB_MSGS.dialogAddScheduleStartsOnTimeLabel());
+        startsOnTime.setFieldLabel("* " + JOB_MSGS.dialogAddScheduleStartsOnTimeLabel());
         startsOnTime.setFormat(DateTimeFormat.getFormat("HH:mm"));
+        startsOnTime.setEditable(false);
         mainPanel.add(startsOnTime);
 
-        endsOn.setFieldLabel(JOB_MSGS.dialogAddScheduleEndsOnLabel());
+        endsOn.setFieldLabel("* " + JOB_MSGS.dialogAddScheduleEndsOnLabel());
         endsOn.setFormatValue(true);
         endsOn.getPropertyEditor().setFormat(DateTimeFormat.getFormat("dd/MM/yyyy"));
         mainPanel.add(endsOn);
 
-        endsOnTime.setFieldLabel(JOB_MSGS.dialogAddScheduleEndsOnTimeLabel());
+        endsOnTime.setFieldLabel("* " + JOB_MSGS.dialogAddScheduleEndsOnTimeLabel());
         endsOnTime.setFormat(DateTimeFormat.getFormat("HH:mm"));
+        endsOnTime.setEditable(false);
         mainPanel.add(endsOnTime);
 
-        retryInterval.setFieldLabel(JOB_MSGS.dialogAddScheduleRetryIntervalLabel());
+        retryInterval.setFieldLabel("* " + JOB_MSGS.dialogAddScheduleRetryIntervalLabel());
         retryInterval.setAllowDecimals(false);
         retryInterval.setAllowNegative(false);
         mainPanel.add(retryInterval);
 
-        cronExpression.setFieldLabel(JOB_MSGS.dialogAddScheduleCronScheduleLabel());
+        cronExpression.setFieldLabel("* " + JOB_MSGS.dialogAddScheduleCronScheduleLabel());
         mainPanel.add(cronExpression);
 
         bodyPanel.add(mainPanel);
@@ -114,6 +123,27 @@ public class JobScheduleAddDialog extends EntityAddEditDialog {
 
         if (endsOn.getValue() == null && endsOnTime.getValue() != null) {
             endsOn.markInvalid(VAL_MSGS.endTimeWithoutEndDate());
+            return;
+        }
+        if (startsOn.getValue() == null && startsOnTime.getValue() != null) {
+            startsOn.markInvalid(VAL_MSGS.startTimeWithoutStartDate());
+            return;
+        }
+        if (startsOn.getValue() != null && startsOnTime.getValue() == null) {
+            startsOnTime.markInvalid(VAL_MSGS.startDateWithoutStartTime());
+            return;
+        }
+        if (startsOn.getValue() != null && endsOn.getValue() != null) {
+            if (startsOn.getValue().after(endsOn.getValue())) {
+                startsOn.markInvalid(VAL_MSGS.startsOnDateLaterThanEndsOn());
+                return;
+            }
+        }
+        if (startsOn.getValue() != null && endsOn.getValue() != null && startsOnTime != null && endsOnTime != null) {
+            if (startsOn.getValue().equals(endsOn.getValue()) && startsOnTime.getValue().getDate().after(endsOnTime.getValue().getDate())) {
+                startsOnTime.markInvalid(VAL_MSGS.startsOnTimeLaterThanEndsOn());
+                return;
+            }
         }
 
         if (endsOn.getValue() != null) {
@@ -166,14 +196,16 @@ public class JobScheduleAddDialog extends EntityAddEditDialog {
         gwtTriggerCreator.setScopeId(currentSession.getSelectedAccountId());
 
         gwtTriggerCreator.setTriggerName(triggerName.getValue());
-        Date startsOnDate = startsOn.getValue();
-        startsOnDate.setTime(startsOnDate.getTime() + (3600 * 1000 * startsOnTime.getValue().getHour()) + 60 * 1000 * startsOnTime.getValue().getMinutes());
-        gwtTriggerCreator.setStartsOn(startsOnDate);
-        if (endsOn.getValue() != null && endsOnTime.getValue() != null) {
-            // According to validation, endsOn and endsOnTime should be both either null or having a value
-            Date endsOnDate = endsOn.getValue();
-            endsOnDate.setTime(endsOnDate.getTime() + (3600 * 1000 * endsOnTime.getValue().getHour()) + 60 * 1000 * endsOnTime.getValue().getMinutes());
-            gwtTriggerCreator.setEndsOn(endsOnDate);
+        if (startsOn.getValue() != null) {
+            Date startsOnDate = startsOn.getValue();
+            startsOnDate.setTime(startsOnDate.getTime() + (3600 * 1000 * startsOnTime.getValue().getHour()) + 60 * 1000 * startsOnTime.getValue().getMinutes());
+            gwtTriggerCreator.setStartsOn(startsOnDate);
+            if (endsOn.getValue() != null && endsOnTime.getValue() != null) {
+                // According to validation, endsOn and endsOnTime should be both either null or having a value
+                Date endsOnDate = endsOn.getValue();
+                endsOnDate.setTime(endsOnDate.getTime() + (3600 * 1000 * endsOnTime.getValue().getHour()) + 60 * 1000 * endsOnTime.getValue().getMinutes());
+                gwtTriggerCreator.setEndsOn(endsOnDate);
+            }
         }
         gwtTriggerCreator.setRetryInterval(retryInterval.getValue() != null ? retryInterval.getValue().longValue() : null);
         gwtTriggerCreator.setCronScheduling(cronExpression.getValue());
@@ -193,16 +225,19 @@ public class JobScheduleAddDialog extends EntityAddEditDialog {
 
             @Override
             public void onFailure(Throwable cause) {
+                exitStatus = false;
+                FailureHandler.handleFormException(formPanel, cause);
+                status.hide();
+                formPanel.getButtonBar().enable();
                 unmask();
-
                 submitButton.enable();
                 cancelButton.enable();
-                status.hide();
-
-                exitStatus = false;
-                exitMessage = JOB_MSGS.dialogAddScheduleError(cause.getLocalizedMessage());
-
-                hide();
+                if (cause instanceof GwtKapuaException) {
+                    GwtKapuaException gwtCause = (GwtKapuaException) cause;
+                    if (gwtCause.getCode().equals(GwtKapuaErrorCode.DUPLICATE_NAME)) {
+                        triggerName.markInvalid(gwtCause.getMessage());
+                    }
+                }
             }
         });
     }

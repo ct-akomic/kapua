@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 Eurotech and/or its affiliates and others
+ * Copyright (c) 2017, 2018 Eurotech and/or its affiliates and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,21 +10,6 @@
  *     Eurotech - initial API and implementation
  *******************************************************************************/
 package org.eclipse.kapua.app.console.module.device.client.device.configuration;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.eclipse.kapua.app.console.module.api.client.messages.ConsoleMessages;
-import org.eclipse.kapua.app.console.module.device.client.messages.ConsoleDeviceMessages;
-import org.eclipse.kapua.app.console.module.api.client.ui.button.RefreshButton;
-import org.eclipse.kapua.app.console.module.api.client.ui.dialog.FileUploadDialog;
-import org.eclipse.kapua.app.console.module.api.client.util.FailureHandler;
-import org.eclipse.kapua.app.console.module.api.client.util.KapuaLoadListener;
-import org.eclipse.kapua.app.console.module.device.shared.model.GwtDevice;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtXSRFToken;
-import org.eclipse.kapua.app.console.module.api.shared.service.GwtSecurityTokenService;
-import org.eclipse.kapua.app.console.module.api.shared.service.GwtSecurityTokenServiceAsync;
 
 import com.extjs.gxt.ui.client.Style.HorizontalAlignment;
 import com.extjs.gxt.ui.client.Style.Scroll;
@@ -62,11 +47,26 @@ import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import org.eclipse.kapua.app.console.module.api.client.messages.ConsoleMessages;
+import org.eclipse.kapua.app.console.module.api.client.ui.button.RefreshButton;
+import org.eclipse.kapua.app.console.module.api.client.ui.dialog.FileUploadDialog;
+import org.eclipse.kapua.app.console.module.api.client.util.ConsoleInfo;
+import org.eclipse.kapua.app.console.module.api.client.util.FailureHandler;
+import org.eclipse.kapua.app.console.module.api.client.util.KapuaLoadListener;
+import org.eclipse.kapua.app.console.module.api.shared.model.GwtXSRFToken;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
+import org.eclipse.kapua.app.console.module.api.shared.service.GwtSecurityTokenService;
+import org.eclipse.kapua.app.console.module.api.shared.service.GwtSecurityTokenServiceAsync;
+import org.eclipse.kapua.app.console.module.device.client.messages.ConsoleDeviceMessages;
+import org.eclipse.kapua.app.console.module.device.shared.model.GwtDevice;
 import org.eclipse.kapua.app.console.module.device.shared.model.GwtSnapshot;
 import org.eclipse.kapua.app.console.module.device.shared.service.GwtDeviceManagementService;
 import org.eclipse.kapua.app.console.module.device.shared.service.GwtDeviceManagementServiceAsync;
 import org.eclipse.kapua.app.console.module.device.shared.service.GwtDeviceService;
 import org.eclipse.kapua.app.console.module.device.shared.service.GwtDeviceServiceAsync;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class DeviceConfigSnapshots extends LayoutContainer {
 
@@ -117,6 +117,7 @@ public class DeviceConfigSnapshots extends LayoutContainer {
         this.selectedDevice = selectedDevice;
     }
 
+    @Override
     protected void onRender(Element parent, int index) {
         super.onRender(parent, index);
         setLayout(new FitLayout());
@@ -227,12 +228,12 @@ public class DeviceConfigSnapshots extends LayoutContainer {
         List<ColumnConfig> columns = new ArrayList<ColumnConfig>();
 
         ColumnConfig column = new ColumnConfig("snapshotId", DEVICE_MSGS.deviceSnapshotId(), 25);
-        column.setSortable(false);
+        column.setSortable(true);
         column.setAlignment(HorizontalAlignment.CENTER);
         columns.add(column);
 
         column = new ColumnConfig("createdOnFormatted", DEVICE_MSGS.deviceSnapshotCreatedOn(), 75);
-        column.setSortable(false);
+        column.setSortable(true);
         column.setAlignment(HorizontalAlignment.LEFT);
         columns.add(column);
 
@@ -320,6 +321,7 @@ public class DeviceConfigSnapshots extends LayoutContainer {
             private static final int TIMEOUT_MILLIS = 30000;
             private int countdownMillis = TIMEOUT_MILLIS;
 
+            @Override
             public void run() {
                 if (selectedDevice != null) {
                     countdownMillis -= PERIOD_MILLIS;
@@ -338,7 +340,7 @@ public class DeviceConfigSnapshots extends LayoutContainer {
                                 @Override
                                 public void onSuccess(GwtDevice gwtDevice) {
                                     if (countdownMillis <= 0 ||
-                                    // Allow the device to disconnect before checking if it's online again.
+                                            // Allow the device to disconnect before checking if it's online again.
                                             ((TIMEOUT_MILLIS - countdownMillis) > 5000 && gwtDevice.isOnline())) {
                                         done();
                                     }
@@ -360,7 +362,7 @@ public class DeviceConfigSnapshots extends LayoutContainer {
 
     public void refresh() {
         if (dirty && initialized) {
-            if (selectedDevice == null) {
+            if (selectedDevice == null || !selectedDevice.isOnline()) {
 
                 toolBar.disable();
                 refreshButton.disable();
@@ -384,7 +386,7 @@ public class DeviceConfigSnapshots extends LayoutContainer {
         if (selectedDevice != null && snapshot != null) {
 
             StringBuilder sbUrl = new StringBuilder();
-                sbUrl.append("device_snapshots?");
+            sbUrl.append("device_snapshots?");
             sbUrl.append("&scopeId=")
                     .append(URL.encodeQueryString(currentSession.getSelectedAccountId()))
                     .append("&deviceId=")
@@ -435,6 +437,7 @@ public class DeviceConfigSnapshots extends LayoutContainer {
                     DEVICE_MSGS.deviceSnapshotRollbackConfirm(),
                     new Listener<MessageBoxEvent>() {
 
+                        @Override
                         public void handleEvent(MessageBoxEvent ce) {
                             // if confirmed, delete
                             Dialog dialog = ce.getDialog();
@@ -464,11 +467,13 @@ public class DeviceConfigSnapshots extends LayoutContainer {
                                                 snapshot,
                                                 new AsyncCallback<Void>() {
 
+                                                    @Override
                                                     public void onFailure(Throwable caught) {
                                                         FailureHandler.handle(caught);
                                                         dirty = true;
                                                     }
 
+                                                    @Override
                                                     public void onSuccess(Void arg0) {
                                                         refreshWhenOnline();
                                                     }
@@ -493,16 +498,18 @@ public class DeviceConfigSnapshots extends LayoutContainer {
         public DataLoadListener() {
         }
 
+        @Override
         public void loaderLoad(LoadEvent le) {
             if (le.exception != null) {
                 FailureHandler.handle(le.exception);
             }
         }
 
+        @Override
         public void loaderLoadException(LoadEvent le) {
 
             if (le.exception != null) {
-                FailureHandler.handle(le.exception);
+                ConsoleInfo.display(MSGS.popupError(), DEVICE_MSGS.deviceConnectionError());
             }
             store.removeAll();
             grid.unmask();

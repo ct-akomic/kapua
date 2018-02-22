@@ -16,9 +16,9 @@ import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import org.eclipse.kapua.app.console.module.api.client.ui.dialog.KapuaDialog;
 import org.eclipse.kapua.app.console.module.api.client.ui.widget.EntityCRUDToolbar;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
-import org.eclipse.kapua.app.console.module.job.shared.model.job.GwtJob;
-import org.eclipse.kapua.app.console.module.job.shared.model.job.GwtJobTarget;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
+import org.eclipse.kapua.app.console.module.job.shared.model.GwtJob;
+import org.eclipse.kapua.app.console.module.job.shared.model.GwtJobTarget;
 import org.eclipse.kapua.app.console.module.job.shared.service.GwtJobService;
 import org.eclipse.kapua.app.console.module.job.shared.service.GwtJobServiceAsync;
 
@@ -28,7 +28,7 @@ public class JobTabTargetsToolbar extends EntityCRUDToolbar<GwtJobTarget> {
     private static final GwtJobServiceAsync JOB_SERVICE = GWT.create(GwtJobService.class);
 
     public JobTabTargetsToolbar(GwtSession currentSession) {
-        super(currentSession);
+        super(currentSession, true);
     }
 
     public void setJobId(String jobId) {

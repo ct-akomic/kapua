@@ -11,15 +11,14 @@
  *******************************************************************************/
 package org.eclipse.kapua.app.console.module.account.client.toolbar;
 
+import com.google.gwt.user.client.Element;
+import com.google.gwt.user.client.rpc.AsyncCallback;
+import org.eclipse.kapua.app.console.module.account.shared.model.GwtAccount;
+import org.eclipse.kapua.app.console.module.account.shared.model.GwtOrganization;
 import org.eclipse.kapua.app.console.module.api.client.util.ConsoleInfo;
 import org.eclipse.kapua.app.console.module.api.client.util.DialogUtils;
 import org.eclipse.kapua.app.console.module.api.client.util.FailureHandler;
-import org.eclipse.kapua.app.console.module.account.shared.model.GwtOrganization;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
-import org.eclipse.kapua.app.console.module.account.shared.model.GwtAccount;
-
-import com.google.gwt.user.client.Element;
-import com.google.gwt.user.client.rpc.AsyncCallback;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
 
 public class AccountEditDialog extends AccountAddDialog {
 
@@ -28,17 +27,16 @@ public class AccountEditDialog extends AccountAddDialog {
     public AccountEditDialog(GwtSession currentSession, GwtAccount selectedAccount) {
         super(currentSession);
         this.selectedAccount = selectedAccount;
-        DialogUtils.resizeDialog(this, 600, 800);
+        DialogUtils.resizeDialog(this, 600, 560);
     }
 
     @Override
     protected void onRender(Element parent, int pos) {
         super.onRender(parent, pos);
-//        fieldSet.remove(accountPassword);
-//        fieldSet.remove(confirmPassword);
+        setClosable(false);
+
         fieldSet.remove(accountNameField);
         accountNameLabel.setVisible(true);
-        parentAccountName.setValue(currentSession.getSelectedAccountName());
 
         accountNameLabel.setValue(selectedAccount.getName());
         accountNameField.setValue(selectedAccount.getName());
@@ -46,8 +44,8 @@ public class AccountEditDialog extends AccountAddDialog {
         organizationName.setValue(selectedAccount.getGwtOrganization().getName());
         organizationName.setOriginalValue(selectedAccount.getGwtOrganization().getName());
 
-        organizationPersonName.setValue(selectedAccount.getGwtOrganization().getPersonName());
-        organizationPersonName.setOriginalValue(selectedAccount.getGwtOrganization().getPersonName());
+        organizationContactName.setValue(selectedAccount.getGwtOrganization().getPersonName());
+        organizationContactName.setOriginalValue(selectedAccount.getGwtOrganization().getPersonName());
 
         organizationEmail.setValue(selectedAccount.getGwtOrganization().getEmailAddress());
         organizationEmail.setOriginalValue(selectedAccount.getGwtOrganization().getEmailAddress());
@@ -82,7 +80,7 @@ public class AccountEditDialog extends AccountAddDialog {
         // Organization data
         GwtOrganization gwtOrganization = new GwtOrganization();
         gwtOrganization.setName(organizationName.getValue());
-        gwtOrganization.setPersonName(organizationPersonName.getValue());
+        gwtOrganization.setPersonName(organizationContactName.getValue());
         gwtOrganization.setEmailAddress(organizationEmail.getValue());
         gwtOrganization.setPhoneNumber(organizationPhoneNumber.getValue());
         gwtOrganization.setAddressLine1(organizationAddressLine1.getValue());
@@ -97,12 +95,14 @@ public class AccountEditDialog extends AccountAddDialog {
                 selectedAccount,
                 new AsyncCallback<GwtAccount>() {
 
+                    @Override
                     public void onFailure(Throwable caught) {
                         FailureHandler.handleFormException(formPanel, caught);
                         status.hide();
                         formPanel.getButtonBar().enable();
                     }
 
+                    @Override
                     public void onSuccess(GwtAccount account) {
                         ConsoleInfo.display(MSGS.info(), MSGS.accountUpdatedConfirmation());
                         hide();
@@ -117,6 +117,6 @@ public class AccountEditDialog extends AccountAddDialog {
 
     @Override
     public String getInfoMessage() {
-        return MSGS.accountEditInfoMessage(selectedAccount.getName());
+        return MSGS.accountEditInfoMessage();
     }
 }

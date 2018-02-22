@@ -36,7 +36,7 @@ import org.eclipse.kapua.app.console.module.api.client.util.DateUtils;
 import org.eclipse.kapua.app.console.module.api.client.util.KapuaLoadListener;
 import org.eclipse.kapua.app.console.module.api.shared.model.GwtEntityModel;
 import org.eclipse.kapua.app.console.module.api.shared.model.GwtGroupedNVPair;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -50,7 +50,7 @@ public abstract class EntityDescriptionTabItem<M extends GwtEntityModel> extends
     private ToolBar toolbar;
     private Grid<GwtGroupedNVPair> descriptionGrid;
     private GroupingStore<GwtGroupedNVPair> descriptionValuesStore;
-    private BaseListLoader<ListLoadResult<GwtGroupedNVPair>> descriptionValuesloader;
+    private BaseListLoader<ListLoadResult<GwtGroupedNVPair>> descriptionValuesLoader;
 
     public EntityDescriptionTabItem(GwtSession currentSession) {
         super(currentSession, MSGS.entityTabDescriptionTitle(), new KapuaIcon(IconSet.INFO));
@@ -70,9 +70,9 @@ public abstract class EntityDescriptionTabItem<M extends GwtEntityModel> extends
         setBorders(true);
 
         RpcProxy<ListLoadResult<GwtGroupedNVPair>> proxy = getDataProxy();
-        descriptionValuesloader = new BaseListLoader<ListLoadResult<GwtGroupedNVPair>>(proxy);
-        descriptionValuesloader.addLoadListener(new DescriptionLoadListener());
-        descriptionValuesStore = new GroupingStore<GwtGroupedNVPair>(descriptionValuesloader);
+        descriptionValuesLoader = new BaseListLoader<ListLoadResult<GwtGroupedNVPair>>(proxy);
+        descriptionValuesLoader.addLoadListener(new DescriptionLoadListener());
+        descriptionValuesStore = new GroupingStore<GwtGroupedNVPair>(descriptionValuesLoader);
         descriptionValuesStore.groupBy("groupLoc");
 
         //
@@ -144,7 +144,7 @@ public abstract class EntityDescriptionTabItem<M extends GwtEntityModel> extends
     @Override
     protected void doRefresh() {
         if (selectedEntity != null) {
-            descriptionValuesloader.load();
+            descriptionValuesLoader.load();
         } else {
             descriptionValuesStore.removeAll();
         }

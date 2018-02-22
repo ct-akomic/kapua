@@ -11,15 +11,18 @@
  *******************************************************************************/
 package org.eclipse.kapua.app.console.module.tag.client;
 
-import org.eclipse.kapua.app.console.module.api.client.ui.dialog.entity.EntityAddEditDialog;
-import org.eclipse.kapua.app.console.module.api.client.ui.panel.FormPanel;
-import org.eclipse.kapua.app.console.module.api.client.util.DialogUtils;
-import org.eclipse.kapua.app.console.module.api.client.util.FailureHandler;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
-
-import com.extjs.gxt.ui.client.widget.form.TextField;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import org.eclipse.kapua.app.console.module.api.client.GwtKapuaErrorCode;
+import org.eclipse.kapua.app.console.module.api.client.GwtKapuaException;
+import org.eclipse.kapua.app.console.module.api.client.ui.dialog.entity.EntityAddEditDialog;
+import org.eclipse.kapua.app.console.module.api.client.ui.panel.FormPanel;
+import org.eclipse.kapua.app.console.module.api.client.ui.widget.KapuaTextField;
+import org.eclipse.kapua.app.console.module.api.client.util.DialogUtils;
+import org.eclipse.kapua.app.console.module.api.client.util.FailureHandler;
+import org.eclipse.kapua.app.console.module.api.client.util.validator.TextFieldValidator;
+import org.eclipse.kapua.app.console.module.api.client.util.validator.TextFieldValidator.FieldType;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
 import org.eclipse.kapua.app.console.module.tag.client.messages.ConsoleTagMessages;
 import org.eclipse.kapua.app.console.module.tag.shared.model.GwtTag;
 import org.eclipse.kapua.app.console.module.tag.shared.model.GwtTagCreator;
@@ -31,7 +34,7 @@ public class TagAddDialog extends EntityAddEditDialog {
     private final static GwtTagServiceAsync GWT_TAG_SERVICE = GWT.create(GwtTagService.class);
     private final static ConsoleTagMessages MSGS = GWT.create(ConsoleTagMessages.class);
 
-    protected TextField<String> tagNameField;
+    protected KapuaTextField<String> tagNameField;
 
     public TagAddDialog(GwtSession currentSession) {
         super(currentSession);
@@ -41,10 +44,11 @@ public class TagAddDialog extends EntityAddEditDialog {
     @Override
     public void createBody() {
         FormPanel tagFormPanel = new FormPanel(FORM_LABEL_WIDTH);
-        tagNameField = new TextField<String>();
+        tagNameField = new KapuaTextField<String>();
         tagNameField.setAllowBlank(false);
         tagNameField.setFieldLabel("* " + MSGS.dialogAddFieldName());
-        tagNameField.setToolTip(MSGS.dialogAddFieldNameTooltip());
+        tagNameField.setValidator(new TextFieldValidator(tagNameField, FieldType.NAME));
+        tagNameField.setMaxLength(255);
         tagFormPanel.add(tagNameField);
         bodyPanel.add(tagFormPanel);
     }
@@ -64,14 +68,19 @@ public class TagAddDialog extends EntityAddEditDialog {
             }
 
             @Override
-            public void onFailure(Throwable arg0) {
-                FailureHandler.handleFormException(formPanel, arg0);
+            public void onFailure(Throwable cause) {
+                FailureHandler.handleFormException(formPanel, cause);
                 status.hide();
                 formPanel.getButtonBar().enable();
                 unmask();
-                hide();
                 submitButton.enable();
                 cancelButton.enable();
+                if (cause instanceof GwtKapuaException) {
+                    GwtKapuaException gwtCause = (GwtKapuaException) cause;
+                    if (gwtCause.getCode().equals(GwtKapuaErrorCode.DUPLICATE_NAME)) {
+                        tagNameField.markInvalid(gwtCause.getMessage());
+                    }
+                }
             }
         });
 

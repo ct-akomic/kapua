@@ -11,22 +11,6 @@
  *******************************************************************************/
 package org.eclipse.kapua.app.console.core.client;
 
-import java.util.logging.Logger;
-
-import org.eclipse.kapua.app.console.core.client.messages.ConsoleCoreMessages;
-import org.eclipse.kapua.app.console.core.shared.model.GwtProductInformation;
-import org.eclipse.kapua.app.console.module.api.client.messages.ConsoleMessages;
-import org.eclipse.kapua.app.console.module.api.client.util.ConsoleInfo;
-import org.eclipse.kapua.app.console.core.client.util.Logout;
-import org.eclipse.kapua.app.console.module.api.client.util.UserAgentUtils;
-import org.eclipse.kapua.app.console.module.api.client.util.Years;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
-import org.eclipse.kapua.app.console.core.shared.model.authentication.GwtJwtCredential;
-import org.eclipse.kapua.app.console.core.shared.service.GwtAuthorizationService;
-import org.eclipse.kapua.app.console.core.shared.service.GwtAuthorizationServiceAsync;
-import org.eclipse.kapua.app.console.core.shared.service.GwtSettingsService;
-import org.eclipse.kapua.app.console.core.shared.service.GwtSettingsServiceAsync;
-
 import com.allen_sauer.gwt.log.client.Log;
 import com.extjs.gxt.ui.client.Style;
 import com.extjs.gxt.ui.client.Style.HorizontalAlignment;
@@ -57,12 +41,30 @@ import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.SimplePanel;
+import org.eclipse.kapua.app.console.core.client.messages.ConsoleCoreMessages;
+import org.eclipse.kapua.app.console.core.client.util.Logout;
+import org.eclipse.kapua.app.console.core.shared.model.GwtProductInformation;
+import org.eclipse.kapua.app.console.core.shared.model.authentication.GwtJwtCredential;
+import org.eclipse.kapua.app.console.core.shared.service.GwtAuthorizationService;
+import org.eclipse.kapua.app.console.core.shared.service.GwtAuthorizationServiceAsync;
+import org.eclipse.kapua.app.console.core.shared.service.GwtSettingsService;
+import org.eclipse.kapua.app.console.core.shared.service.GwtSettingsServiceAsync;
+import org.eclipse.kapua.app.console.module.api.client.messages.ConsoleMessages;
+import org.eclipse.kapua.app.console.module.api.client.ui.grid.EntityGrid;
+import org.eclipse.kapua.app.console.module.api.client.ui.panel.ContentPanel;
+import org.eclipse.kapua.app.console.module.api.client.ui.panel.EntityFilterPanel;
+import org.eclipse.kapua.app.console.module.api.client.ui.view.AbstractEntityView;
+import org.eclipse.kapua.app.console.module.api.client.util.ConsoleInfo;
+import org.eclipse.kapua.app.console.module.api.client.util.UserAgentUtils;
+import org.eclipse.kapua.app.console.module.api.client.util.Years;
+import org.eclipse.kapua.app.console.module.api.shared.model.GwtEntityModel;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
+
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
- * 
  * Entry point classes define <code>onModuleLoad()</code>.
- * 
  */
 public class KapuaCloudConsole implements EntryPoint {
 
@@ -80,17 +82,20 @@ public class KapuaCloudConsole implements EntryPoint {
 
     private NorthView northView;
     private WestNavigationView westView;
+    private ContentPanel filterPanel;
     private LayoutContainer centerView;
     private HorizontalPanel southView;
 
     private Label creditLabel;
 
     private GwtProductInformation productInformation;
+    private BorderLayoutData filterPanelData;
 
     /**
      * Note, we defer all application initialization code to {@link #onModuleLoad2()} so that the
      * UncaughtExceptionHandler can catch any unexpected exceptions.
      */
+    @Override
     public void onModuleLoad() {
         /*
          * Install an UncaughtExceptionHandler which will produce <code>FATAL</code> log messages
@@ -100,6 +105,7 @@ public class KapuaCloudConsole implements EntryPoint {
         // Use deferred command to catch initialization exceptions in onModuleLoad2
         Scheduler.get().scheduleDeferred(new ScheduledCommand() {
 
+            @Override
             public void execute() {
                 onModuleLoad2();
             }
@@ -125,11 +131,13 @@ public class KapuaCloudConsole implements EntryPoint {
                 // Check if a session has already been established on the server-side
                 gwtAuthorizationService.getCurrentSession(new AsyncCallback<GwtSession>() {
 
+                    @Override
                     public void onFailure(Throwable t) {
                         // We do not have a valid session: display the login page
                         renderLoginDialog();
                     }
 
+                    @Override
                     public void onSuccess(GwtSession gwtSession) {
                         if (gwtSession == null) {
                             // We do not have a valid session: display the login page
@@ -148,7 +156,7 @@ public class KapuaCloudConsole implements EntryPoint {
     }
 
     private void render(GwtSession gwtSession) {
-        final BorderLayout borderLayout = new BorderLayout();
+        BorderLayout borderLayout = new BorderLayout();
 
         viewport = new Viewport();
         viewport.setLayout(borderLayout);
@@ -184,11 +192,26 @@ public class KapuaCloudConsole implements EntryPoint {
         // West View
         BorderLayoutData westData = new BorderLayoutData(LayoutRegion.WEST, 200);
         westData.setSplit(false);
-        westData.setMargins(new Margins(0, 5, 0, 5));
+        westData.setMargins(new Margins(0, 5, 0, 0));
 
-        westView = new WestNavigationView(currentSession, centerView);
+        westView = new WestNavigationView(currentSession, centerView, this);
 
         viewport.add(westView, westData);
+
+        //
+        // East View
+
+        filterPanel = new ContentPanel();
+        filterPanel.setLayout(new FitLayout());
+        filterPanel.setBorders(false);
+        filterPanel.hide();
+
+        filterPanelData = new BorderLayoutData(Style.LayoutRegion.EAST, 220);
+        filterPanelData.setMargins(new Margins(0, 5, 0, 0));
+        filterPanelData.setCollapsible(false);
+        filterPanelData.setSplit(false);
+
+        viewport.add(filterPanel, filterPanelData);
 
         //
         // South view
@@ -225,9 +248,9 @@ public class KapuaCloudConsole implements EntryPoint {
     }
 
     private void renderLoginDialog() {
-        final Viewport viewport = new Viewport();
+        Viewport viewport = new Viewport();
 
-        final BorderLayout borderLayout = new BorderLayout();
+        BorderLayout borderLayout = new BorderLayout();
         viewport.setLayout(borderLayout);
         if (!UserAgentUtils.isIE() || UserAgentUtils.getIEDocumentMode() > 8) {
             viewport.setStyleName("login");
@@ -296,7 +319,7 @@ public class KapuaCloudConsole implements EntryPoint {
             lcFooter.setStyleName("loginFooter-ie8");
         }
 
-        final Html genericNote = new Html();
+        Html genericNote = new Html();
         genericNote.setId("login-generic-note");
 
         lcFooter.add(genericNote, new TableData(Style.HorizontalAlignment.LEFT, Style.VerticalAlignment.BOTTOM));
@@ -316,7 +339,7 @@ public class KapuaCloudConsole implements EntryPoint {
         creditLabel.setText(productInformation.getBackgroundCredits());
 
         // Check if coming from SSO login
-        final String accessToken = Window.Location.getParameter(Logout.PARAMETER_ACCESS_TOKEN);
+        String accessToken = Window.Location.getParameter(Logout.PARAMETER_ACCESS_TOKEN);
 
         if (accessToken != null && !accessToken.isEmpty()) {
             logger.info("Performing SSO login");
@@ -332,6 +355,7 @@ public class KapuaCloudConsole implements EntryPoint {
 
         loginDialog.addListener(Events.Hide, new Listener<ComponentEvent>() {
 
+            @Override
             public void handleEvent(ComponentEvent be) {
                 if (loginDialog.isAllowMainScreen()) {
                     renderMainScreen(viewport, loginDialog.getCurrentSession());
@@ -344,6 +368,7 @@ public class KapuaCloudConsole implements EntryPoint {
         if (!UserAgentUtils.isIE()) {
             Window.addResizeHandler(new ResizeHandler() {
 
+                @Override
                 public void onResize(ResizeEvent arg0) {
                     loginDialog.center();
                 }
@@ -365,7 +390,7 @@ public class KapuaCloudConsole implements EntryPoint {
         dlg.setModal(true);
         dlg.setOnEsc(false);
 
-        final Label label = new Label(MSGS.ssoWaitDialog_text());
+        Label label = new Label(MSGS.ssoWaitDialog_text());
         dlg.add(label);
 
         dlg.show();
@@ -373,7 +398,7 @@ public class KapuaCloudConsole implements EntryPoint {
 
         // start login process
 
-        final GwtJwtCredential credentials = new GwtJwtCredential(authToken);
+        GwtJwtCredential credentials = new GwtJwtCredential(authToken);
         gwtAuthorizationService.login(credentials, new AsyncCallback<GwtSession>() {
 
             @Override
@@ -385,7 +410,7 @@ public class KapuaCloudConsole implements EntryPoint {
             }
 
             @Override
-            public void onSuccess(final GwtSession gwtSession) {
+            public void onSuccess(GwtSession gwtSession) {
                 logger.fine("User: " + gwtSession.getUserId());
                 dlg.hide();
                 renderMainScreen(viewport, gwtSession);
@@ -413,7 +438,21 @@ public class KapuaCloudConsole implements EntryPoint {
         return southView;
     }
 
-    private void renderMainScreen(final Viewport viewport, GwtSession session) {
+    public ContentPanel getFilterPanel() {
+        return filterPanel;
+    }
+
+    public void setFilterPanel(EntityFilterPanel<? extends GwtEntityModel> filterPanel, AbstractEntityView abstractEntityView) {
+        EntityGrid entityGrid = abstractEntityView.getEntityGrid(abstractEntityView, currentSession);
+        filterPanel.setEntityGrid(entityGrid);
+        getViewport().remove(this.filterPanel);
+        this.filterPanel = filterPanel;
+        entityGrid.setFilterPanel(filterPanel);
+        getViewport().add(filterPanel, filterPanelData);
+        getViewport().layout();
+    }
+
+    private void renderMainScreen(Viewport viewport, GwtSession session) {
         currentSession = session;
 
         if (currentSession != null) {

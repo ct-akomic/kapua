@@ -11,13 +11,12 @@
  *******************************************************************************/
 package org.eclipse.kapua.app.console.module.user.client.dialog;
 
-import org.eclipse.kapua.app.console.module.api.client.util.DialogUtils;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
-import org.eclipse.kapua.app.console.module.user.client.messages.ConsoleUserMessages;
-import org.eclipse.kapua.app.console.module.user.shared.model.user.GwtUser;
-
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import org.eclipse.kapua.app.console.module.api.client.util.DialogUtils;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
+import org.eclipse.kapua.app.console.module.user.client.messages.ConsoleUserMessages;
+import org.eclipse.kapua.app.console.module.user.shared.model.GwtUser;
 import org.eclipse.kapua.app.console.module.user.shared.service.GwtUserService;
 import org.eclipse.kapua.app.console.module.user.shared.service.GwtUserServiceAsync;
 
@@ -32,8 +31,7 @@ public class UserEditDialog extends UserAddDialog {
     public UserEditDialog(GwtSession currentSession, GwtUser selectedUser) {
         super(currentSession);
         this.selectedUser = selectedUser;
-        DialogUtils.resizeDialog(this, 400, 385);
-
+        DialogUtils.resizeDialog(this, 400, 390);
     }
 
     @Override
@@ -86,7 +84,6 @@ public class UserEditDialog extends UserAddDialog {
             public void onFailure(Throwable cause) {
                 exitStatus = false;
                 exitMessage = MSGS.dialogEditError(cause.getLocalizedMessage());
-                hide();
             }
         });
 
@@ -102,7 +99,6 @@ public class UserEditDialog extends UserAddDialog {
         return MSGS.dialogEditInfo();
     }
 
-
     private void populateEditDialog(GwtUser gwtUser) {
         username.setValue(gwtUser.getUsername());
         username.disable();
@@ -117,5 +113,6 @@ public class UserEditDialog extends UserAddDialog {
         phoneNumber.setValue(gwtUser.getPhoneNumber());
         userStatus.setSimpleValue(gwtUser.getStatusEnum());
         expirationDate.setValue(gwtUser.getExpirationDate());
+        expirationDate.setMaxLength(10);
     }
 }

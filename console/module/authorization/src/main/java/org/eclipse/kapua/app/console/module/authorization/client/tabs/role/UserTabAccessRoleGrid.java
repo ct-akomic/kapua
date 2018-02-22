@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.kapua.app.console.module.authorization.client.tabs.role;
 
+import com.extjs.gxt.ui.client.data.BasePagingLoadResult;
 import com.extjs.gxt.ui.client.data.PagingLoadConfig;
 import com.extjs.gxt.ui.client.data.PagingLoadResult;
 import com.extjs.gxt.ui.client.data.RpcProxy;
@@ -20,8 +21,8 @@ import com.google.gwt.user.client.rpc.AsyncCallback;
 import org.eclipse.kapua.app.console.module.api.client.ui.grid.EntityGrid;
 import org.eclipse.kapua.app.console.module.api.client.ui.view.AbstractEntityView;
 import org.eclipse.kapua.app.console.module.api.client.ui.widget.EntityCRUDToolbar;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
 import org.eclipse.kapua.app.console.module.api.shared.model.query.GwtQuery;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
 import org.eclipse.kapua.app.console.module.authorization.client.messages.ConsoleRoleMessages;
 import org.eclipse.kapua.app.console.module.authorization.shared.model.GwtAccessRole;
 import org.eclipse.kapua.app.console.module.authorization.shared.service.GwtAccessRoleService;
@@ -50,10 +51,14 @@ public class UserTabAccessRoleGrid extends EntityGrid<GwtAccessRole> {
 
             @Override
             protected void load(Object loadConfig, AsyncCallback<PagingLoadResult<GwtAccessRole>> callback) {
-                GWT_ACCESS_ROLE_SERVICE.findByUserId((PagingLoadConfig) loadConfig,
-                        currentSession.getSelectedAccountId(),
-                        userId,
-                        callback);
+                if (userId == null) {
+                    callback.onSuccess(new BasePagingLoadResult<GwtAccessRole>(new ArrayList<GwtAccessRole>()));
+                } else {
+                    GWT_ACCESS_ROLE_SERVICE.findByUserId((PagingLoadConfig) loadConfig,
+                            currentSession.getSelectedAccountId(),
+                            userId,
+                            callback);
+                }
             }
         };
     }
@@ -80,11 +85,11 @@ public class UserTabAccessRoleGrid extends EntityGrid<GwtAccessRole> {
         columnConfig.setSortable(false);
         columnConfigs.add(columnConfig);
 
-        columnConfig = new ColumnConfig("userName", MSGS.gridRoleColumnHeaderCreatedBy(), 200);
-        columnConfig.setSortable(false);
+        columnConfig = new ColumnConfig("createdOnFormatted", MSGS.gridRoleColumnHeaderCreatedOn(), 200);
         columnConfigs.add(columnConfig);
 
-        columnConfig = new ColumnConfig("createdOn", MSGS.gridRoleColumnHeaderCreatedOn(), 200);
+        columnConfig = new ColumnConfig("createdByName", MSGS.gridRoleColumnHeaderCreatedBy(), 200);
+        columnConfig.setSortable(false);
         columnConfigs.add(columnConfig);
 
         return columnConfigs;

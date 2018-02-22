@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2017 Eurotech and/or its affiliates and others
+ * Copyright (c) 2011, 2018 Eurotech and/or its affiliates and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -25,7 +25,7 @@ import com.google.gwt.user.client.rpc.AsyncCallback;
 import org.eclipse.kapua.app.console.module.api.client.ui.dialog.entity.EntityAddEditDialog;
 import org.eclipse.kapua.app.console.module.api.client.ui.panel.FormPanel;
 import org.eclipse.kapua.app.console.module.api.client.util.DialogUtils;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
 import org.eclipse.kapua.app.console.module.authorization.client.messages.ConsolePermissionMessages;
 import org.eclipse.kapua.app.console.module.authorization.shared.model.GwtAccessInfo;
 import org.eclipse.kapua.app.console.module.authorization.shared.model.GwtAccessPermission;
@@ -89,7 +89,7 @@ public class PermissionAddDialog extends EntityAddEditDialog {
             }
         });
 
-        DialogUtils.resizeDialog(this, 500, 250);
+        DialogUtils.resizeDialog(this, 500, 220);
     }
 
     @Override
@@ -200,10 +200,12 @@ public class PermissionAddDialog extends EntityAddEditDialog {
                         actionsCombo.setSimpleValue(allAction);
                         actionsCombo.enable();
 
-                        if (selectedDomain.getGroupable()) {
+                        if (allDomain.equals(selectedDomain)) {
+                            groupsCombo.setEnabled(true);
+                            groupsCombo.setValue(allGroup);
+                        } else if (selectedDomain.getGroupable()) {
                             groupsCombo.setEnabled(selectedDomain.getGroupable());
                             groupsCombo.setValue(allGroup);
-
                         } else {
                             groupsCombo.setEnabled(selectedDomain.getGroupable());
                             groupsCombo.setRawValue(MSGS.dialogAddPermissionGroupIdNotGroupable());
@@ -221,6 +223,7 @@ public class PermissionAddDialog extends EntityAddEditDialog {
         actionsCombo.disable();
         actionsCombo.setTypeAhead(false);
         actionsCombo.setAllowBlank(false);
+        actionsCombo.setEditable(false);
         actionsCombo.setFieldLabel(MSGS.dialogAddPermissionAction());
         actionsCombo.setTriggerAction(TriggerAction.ALL);
         actionsCombo.setEmptyText(MSGS.dialogAddPermissionLoading());

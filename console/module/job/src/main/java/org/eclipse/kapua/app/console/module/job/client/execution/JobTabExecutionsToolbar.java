@@ -13,15 +13,15 @@ package org.eclipse.kapua.app.console.module.job.client.execution;
 
 import com.google.gwt.user.client.Element;
 import org.eclipse.kapua.app.console.module.api.client.ui.widget.EntityCRUDToolbar;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
-import org.eclipse.kapua.app.console.module.job.shared.model.job.GwtExecution;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
+import org.eclipse.kapua.app.console.module.job.shared.model.GwtExecution;
 
 public class JobTabExecutionsToolbar extends EntityCRUDToolbar<GwtExecution> {
 
     private String jobId;
 
     public JobTabExecutionsToolbar(GwtSession currentSession) {
-        super(currentSession);
+        super(currentSession, true);
     }
 
     public String getJobId() {

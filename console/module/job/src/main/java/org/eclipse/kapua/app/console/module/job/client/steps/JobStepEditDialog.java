@@ -17,10 +17,13 @@ import com.extjs.gxt.ui.client.widget.Component;
 import com.extjs.gxt.ui.client.widget.form.Field;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.rpc.AsyncCallback;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
-import org.eclipse.kapua.app.console.module.job.shared.model.job.GwtJobStep;
-import org.eclipse.kapua.app.console.module.job.shared.model.job.GwtJobStepDefinition;
-import org.eclipse.kapua.app.console.module.job.shared.model.job.GwtJobStepProperty;
+import org.eclipse.kapua.app.console.module.api.client.GwtKapuaErrorCode;
+import org.eclipse.kapua.app.console.module.api.client.GwtKapuaException;
+import org.eclipse.kapua.app.console.module.api.client.util.FailureHandler;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
+import org.eclipse.kapua.app.console.module.job.shared.model.GwtJobStep;
+import org.eclipse.kapua.app.console.module.job.shared.model.GwtJobStepDefinition;
+import org.eclipse.kapua.app.console.module.job.shared.model.GwtJobStepProperty;
 import org.eclipse.kapua.app.console.module.job.shared.service.GwtJobStepDefinitionService;
 import org.eclipse.kapua.app.console.module.job.shared.service.GwtJobStepDefinitionServiceAsync;
 import org.eclipse.kapua.app.console.module.job.shared.service.GwtJobStepService;
@@ -104,7 +107,18 @@ public class JobStepEditDialog extends JobStepAddDialog {
             @Override
             public void onFailure(Throwable cause) {
                 exitStatus = false;
-                exitMessage = JOB_MSGS.dialogEditError(cause.getLocalizedMessage());
+                FailureHandler.handleFormException(formPanel, cause);
+                status.hide();
+                formPanel.getButtonBar().enable();
+                unmask();
+                submitButton.enable();
+                cancelButton.enable();
+                if (cause instanceof GwtKapuaException) {
+                    GwtKapuaException gwtCause = (GwtKapuaException) cause;
+                    if (gwtCause.getCode().equals(GwtKapuaErrorCode.DUPLICATE_NAME)) {
+                        jobStepName.markInvalid(gwtCause.getMessage());
+                    }
+                }
             }
         });
 
@@ -117,6 +131,11 @@ public class JobStepEditDialog extends JobStepAddDialog {
             super.loaderLoad(le);
             populateEditDialog(selectedJobStep);
         }
+    }
+
+    @Override
+    public String getHeaderMessage() {
+        return JOB_MSGS.dialogEditStepHeader();
     }
 
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 Eurotech and/or its affiliates and others
+ * Copyright (c) 2017, 2018 Eurotech and/or its affiliates and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,26 +10,6 @@
  *     Eurotech - initial API and implementation
  *******************************************************************************/
 package org.eclipse.kapua.app.console.module.device.client.device.configuration;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.eclipse.kapua.app.console.module.api.client.messages.ConsoleMessages;
-import org.eclipse.kapua.app.console.module.device.client.messages.ConsoleDeviceMessages;
-import org.eclipse.kapua.app.console.module.api.client.ui.button.DiscardButton;
-import org.eclipse.kapua.app.console.module.api.client.ui.button.SaveButton;
-import org.eclipse.kapua.app.console.module.api.client.resources.icons.IconSet;
-import org.eclipse.kapua.app.console.module.api.client.resources.icons.KapuaIcon;
-import org.eclipse.kapua.app.console.module.api.client.ui.button.RefreshButton;
-import org.eclipse.kapua.app.console.module.api.client.ui.label.Label;
-import org.eclipse.kapua.app.console.module.api.client.util.FailureHandler;
-import org.eclipse.kapua.app.console.module.api.client.util.KapuaLoadListener;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtConfigComponent;
-import org.eclipse.kapua.app.console.module.device.shared.model.GwtDevice;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtXSRFToken;
-import org.eclipse.kapua.app.console.module.api.shared.service.GwtSecurityTokenService;
-import org.eclipse.kapua.app.console.module.api.shared.service.GwtSecurityTokenServiceAsync;
 
 import com.extjs.gxt.ui.client.Style.LayoutRegion;
 import com.extjs.gxt.ui.client.Style.Scroll;
@@ -63,10 +43,30 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.Element;
 import com.google.gwt.user.client.Timer;
 import com.google.gwt.user.client.rpc.AsyncCallback;
+import org.eclipse.kapua.app.console.module.api.client.messages.ConsoleMessages;
+import org.eclipse.kapua.app.console.module.api.client.resources.icons.IconSet;
+import org.eclipse.kapua.app.console.module.api.client.resources.icons.KapuaIcon;
+import org.eclipse.kapua.app.console.module.api.client.ui.button.DiscardButton;
+import org.eclipse.kapua.app.console.module.api.client.ui.button.RefreshButton;
+import org.eclipse.kapua.app.console.module.api.client.ui.button.SaveButton;
+import org.eclipse.kapua.app.console.module.api.client.ui.label.Label;
+import org.eclipse.kapua.app.console.module.api.client.util.ConsoleInfo;
+import org.eclipse.kapua.app.console.module.api.client.util.FailureHandler;
+import org.eclipse.kapua.app.console.module.api.client.util.KapuaLoadListener;
+import org.eclipse.kapua.app.console.module.api.shared.model.GwtConfigComponent;
+import org.eclipse.kapua.app.console.module.api.shared.model.GwtXSRFToken;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
+import org.eclipse.kapua.app.console.module.api.shared.service.GwtSecurityTokenService;
+import org.eclipse.kapua.app.console.module.api.shared.service.GwtSecurityTokenServiceAsync;
+import org.eclipse.kapua.app.console.module.device.client.messages.ConsoleDeviceMessages;
+import org.eclipse.kapua.app.console.module.device.shared.model.GwtDevice;
 import org.eclipse.kapua.app.console.module.device.shared.service.GwtDeviceManagementService;
 import org.eclipse.kapua.app.console.module.device.shared.service.GwtDeviceManagementServiceAsync;
 import org.eclipse.kapua.app.console.module.device.shared.service.GwtDeviceService;
 import org.eclipse.kapua.app.console.module.device.shared.service.GwtDeviceServiceAsync;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @SuppressWarnings("Duplicates")
 public class DeviceConfigComponents extends LayoutContainer {
@@ -116,6 +116,7 @@ public class DeviceConfigComponents extends LayoutContainer {
         this.selectedDevice = selectedDevice;
     }
 
+    @Override
     protected void onRender(Element parent, int index) {
         super.onRender(parent, index);
         setLayout(new FitLayout());
@@ -149,21 +150,16 @@ public class DeviceConfigComponents extends LayoutContainer {
             @Override
             public void componentSelected(ButtonEvent ce) {
                 if (!refreshProcess) {
-                    refreshProcess = true;
                     refreshButton.setEnabled(false);
+                    refreshProcess = true;
 
                     dirty = true;
                     refresh();
-
-                    refreshButton.setEnabled(true);
                     refreshProcess = false;
+                    refreshButton.setEnabled(true);
                 }
             }
         });
-
-        refreshButton.setEnabled(true);
-        toolBar.add(refreshButton);
-        toolBar.add(new SeparatorToolItem());
 
         apply = new SaveButton(new SelectionListener<ButtonEvent>() {
 
@@ -199,7 +195,13 @@ public class DeviceConfigComponents extends LayoutContainer {
 
         apply.setEnabled(false);
         reset.setEnabled(false);
-
+        if (selectedDevice == null) {
+            refreshButton.setEnabled(false);
+        } else {
+            refreshButton.setEnabled(true);
+        }
+        toolBar.add(refreshButton);
+        toolBar.add(new SeparatorToolItem());
         toolBar.add(apply);
         toolBar.add(new SeparatorToolItem());
         toolBar.add(reset);
@@ -282,7 +284,7 @@ public class DeviceConfigComponents extends LayoutContainer {
             @Override
             public void handleEvent(BaseEvent be) {
 
-                final BaseEvent theEvent = be;
+                BaseEvent theEvent = be;
                 SelectionEvent<ModelData> se = (SelectionEvent<ModelData>) be;
 
                 final GwtConfigComponent componentToSwitchTo = (GwtConfigComponent) se.getModel();
@@ -304,6 +306,7 @@ public class DeviceConfigComponents extends LayoutContainer {
                             DEVICE_MSGS.deviceConfigDirty(),
                             new Listener<MessageBoxEvent>() {
 
+                                @Override
                                 public void handleEvent(MessageBoxEvent ce) {
                                     // if confirmed, delete
                                     Dialog dialog = ce.getDialog();
@@ -346,6 +349,7 @@ public class DeviceConfigComponents extends LayoutContainer {
             private static final int TIMEOUT_MILLIS = 30000;
             private int countdownMillis = TIMEOUT_MILLIS;
 
+            @Override
             public void run() {
                 if (selectedDevice != null) {
                     countdownMillis -= PERIOD_MILLIS;
@@ -364,7 +368,7 @@ public class DeviceConfigComponents extends LayoutContainer {
                                 @Override
                                 public void onSuccess(GwtDevice gwtDevice) {
                                     if (countdownMillis <= 0 ||
-                                    // Allow the device to disconnect before checking if it's online again.
+                                            // Allow the device to disconnect before checking if it's online again.
                                             ((TIMEOUT_MILLIS - countdownMillis) > 5000 && gwtDevice.isOnline())) {
                                         done();
                                     }
@@ -387,11 +391,14 @@ public class DeviceConfigComponents extends LayoutContainer {
 
     public void refresh() {
         if (dirty && initialized) {
-
+            if (selectedDevice != null) {
+                refreshButton.setEnabled(true);
+            } else {
+                refreshButton.setEnabled(false);
+            }
             // clear the tree and disable the toolbar
             apply.setEnabled(false);
             reset.setEnabled(false);
-            refreshButton.setEnabled(false);
 
             treeStore.removeAll();
 
@@ -453,6 +460,7 @@ public class DeviceConfigComponents extends LayoutContainer {
                 message,
                 new Listener<MessageBoxEvent>() {
 
+                    @Override
                     public void handleEvent(MessageBoxEvent ce) {
 
                         // if confirmed, push the update
@@ -461,7 +469,9 @@ public class DeviceConfigComponents extends LayoutContainer {
                         if (dialog.yesText.equals(ce.getButtonClicked().getText())) {
 
                             // mark the whole config panel dirty and for reload
-                            tabConfig.setEntity(selectedDevice);
+
+                            // Why forcing the entity again?
+                            // tabConfig.setEntity(selectedDevice);
 
                             finalDevConfPanel.mask(MSGS.applying());
                             tree.mask();
@@ -480,17 +490,20 @@ public class DeviceConfigComponents extends LayoutContainer {
 
                                 @Override
                                 public void onSuccess(GwtXSRFToken token) {
-                                    final GwtConfigComponent configComponent = finalDevConfPanel.getUpdatedConfiguration();
+                                    GwtConfigComponent configComponent = finalDevConfPanel.getUpdatedConfiguration();
                                     gwtDeviceManagementService.updateComponentConfiguration(token,
                                             selectedDevice,
                                             configComponent,
                                             new AsyncCallback<Void>() {
 
+                                                @Override
                                                 public void onFailure(Throwable caught) {
-                                                    FailureHandler.handle(caught);
+                                                    ConsoleInfo.display(MSGS.popupError(), DEVICE_MSGS.deviceConnectionError());
                                                     dirty = true;
+                                                    refresh();
                                                 }
 
+                                                @Override
                                                 public void onSuccess(Void arg0) {
                                                     dirty = true;
                                                     if (isCloudUpdate) {
@@ -516,6 +529,7 @@ public class DeviceConfigComponents extends LayoutContainer {
                     DEVICE_MSGS.deviceConfigDirty(),
                     new Listener<MessageBoxEvent>() {
 
+                        @Override
                         public void handleEvent(MessageBoxEvent ce) {
                             // if confirmed, delete
                             Dialog dialog = ce.getDialog();
@@ -590,18 +604,19 @@ public class DeviceConfigComponents extends LayoutContainer {
         public DataLoadListener() {
         }
 
+        @Override
         public void loaderLoad(LoadEvent le) {
             if (le.exception != null) {
                 FailureHandler.handle(le.exception);
             }
             tree.unmask();
-            refreshButton.setEnabled(true);
         }
 
+        @Override
         public void loaderLoadException(LoadEvent le) {
 
             if (le.exception != null) {
-                FailureHandler.handle(le.exception);
+                ConsoleInfo.display(MSGS.popupError(), DEVICE_MSGS.deviceConnectionError());
             }
 
             List<ModelData> comps = new ArrayList<ModelData>();

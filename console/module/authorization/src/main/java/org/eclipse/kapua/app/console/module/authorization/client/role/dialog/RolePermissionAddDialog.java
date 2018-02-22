@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2017 Eurotech and/or its affiliates and others
+ * Copyright (c) 2011, 2018 Eurotech and/or its affiliates and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -24,8 +24,8 @@ import com.google.gwt.user.client.rpc.AsyncCallback;
 import org.eclipse.kapua.app.console.module.api.client.ui.dialog.entity.EntityAddEditDialog;
 import org.eclipse.kapua.app.console.module.api.client.ui.panel.FormPanel;
 import org.eclipse.kapua.app.console.module.api.client.util.DialogUtils;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
-import org.eclipse.kapua.app.console.module.authorization.client.messages.ConsoleRoleMessages;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
+import org.eclipse.kapua.app.console.module.authorization.client.messages.ConsolePermissionMessages;
 import org.eclipse.kapua.app.console.module.authorization.shared.model.GwtDomain;
 import org.eclipse.kapua.app.console.module.authorization.shared.model.GwtGroup;
 import org.eclipse.kapua.app.console.module.authorization.shared.model.GwtPermission;
@@ -33,6 +33,7 @@ import org.eclipse.kapua.app.console.module.authorization.shared.model.GwtPermis
 import org.eclipse.kapua.app.console.module.authorization.shared.model.GwtRole;
 import org.eclipse.kapua.app.console.module.authorization.shared.model.GwtRolePermission;
 import org.eclipse.kapua.app.console.module.authorization.shared.model.GwtRolePermissionCreator;
+import org.eclipse.kapua.app.console.module.authorization.shared.model.permission.GroupSessionPermission;
 import org.eclipse.kapua.app.console.module.authorization.shared.service.GwtDomainService;
 import org.eclipse.kapua.app.console.module.authorization.shared.service.GwtDomainServiceAsync;
 import org.eclipse.kapua.app.console.module.authorization.shared.service.GwtGroupService;
@@ -44,7 +45,7 @@ import java.util.List;
 
 public class RolePermissionAddDialog extends EntityAddEditDialog {
 
-    private final static ConsoleRoleMessages MSGS = GWT.create(ConsoleRoleMessages.class);
+    private final static ConsolePermissionMessages MSGS = GWT.create(ConsolePermissionMessages.class);
     private final static GwtDomainServiceAsync DOMAIN_SERVICE = GWT.create(GwtDomainService.class);
     private final static GwtGroupServiceAsync GWT_GROUP_SERVICE = GWT.create(GwtGroupService.class);
     private final static GwtDomainServiceAsync GWT_DOMAIN_SERVICE = GWT.create(GwtDomainService.class);
@@ -151,6 +152,7 @@ public class RolePermissionAddDialog extends EntityAddEditDialog {
         // Action
         actionsCombo = new SimpleComboBox<GwtAction>();
         actionsCombo.disable();
+        actionsCombo.setEditable(false);
         actionsCombo.setTypeAhead(false);
         actionsCombo.setAllowBlank(false);
         actionsCombo.setFieldLabel(MSGS.permissionAddDialogAction());
@@ -171,7 +173,7 @@ public class RolePermissionAddDialog extends EntityAddEditDialog {
         groupsCombo.setTriggerAction(TriggerAction.ALL);
         groupsCombo.setEmptyText(MSGS.permissionAddDialogLoading());
         groupsCombo.disable();
-        if (currentSession.hasGroupReadPermission()) {
+        if (currentSession.hasPermission(GroupSessionPermission.read())) {
             GWT_GROUP_SERVICE.findAll(currentSession.getSelectedAccountId(), new AsyncCallback<List<GwtGroup>>() {
 
                 @Override

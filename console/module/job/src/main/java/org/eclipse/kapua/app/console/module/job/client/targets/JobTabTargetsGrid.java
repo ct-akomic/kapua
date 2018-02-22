@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 Eurotech and/or its affiliates and others
+ * Copyright (c) 2017, 2018 Eurotech and/or its affiliates and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,12 +19,12 @@ import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import org.eclipse.kapua.app.console.module.api.client.ui.grid.EntityGrid;
 import org.eclipse.kapua.app.console.module.api.client.ui.view.AbstractEntityView;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
 import org.eclipse.kapua.app.console.module.api.shared.model.query.GwtQuery;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
 import org.eclipse.kapua.app.console.module.job.client.messages.ConsoleJobMessages;
-import org.eclipse.kapua.app.console.module.job.shared.model.job.GwtJob;
-import org.eclipse.kapua.app.console.module.job.shared.model.job.GwtJobTarget;
-import org.eclipse.kapua.app.console.module.job.shared.model.job.GwtJobTargetQuery;
+import org.eclipse.kapua.app.console.module.job.shared.model.GwtJob;
+import org.eclipse.kapua.app.console.module.job.shared.model.GwtJobTarget;
+import org.eclipse.kapua.app.console.module.job.shared.model.GwtJobTargetQuery;
 import org.eclipse.kapua.app.console.module.job.shared.service.GwtJobService;
 import org.eclipse.kapua.app.console.module.job.shared.service.GwtJobServiceAsync;
 import org.eclipse.kapua.app.console.module.job.shared.service.GwtJobTargetService;
@@ -68,16 +68,18 @@ public class JobTabTargetsGrid extends EntityGrid<GwtJobTarget> {
     protected List<ColumnConfig> getColumns() {
         List<ColumnConfig> columnConfigs = new ArrayList<ColumnConfig>();
 
-        ColumnConfig columnConfig = new ColumnConfig("jobTargetId", MSGS.gridJobTargetColumnHeaderJobTargetId(), 100);
+        ColumnConfig columnConfig = new ColumnConfig("clientId", MSGS.gridJobTargetColumnHeaderJobClientId(), 200);
+        columnConfig.setSortable(false);
         columnConfigs.add(columnConfig);
 
-        columnConfig = new ColumnConfig("stepIndex", MSGS.gridJobTargetColumnHeaderJobStepIndex(), 400);
+        columnConfig = new ColumnConfig("stepIndex", MSGS.gridJobTargetColumnHeaderJobStepIndex(), 300);
         columnConfigs.add(columnConfig);
 
         columnConfig = new ColumnConfig("status", MSGS.gridJobTargetColumnHeaderStatus(), 200);
         columnConfigs.add(columnConfig);
 
         columnConfig = new ColumnConfig("errorMessage", MSGS.gridJobTargetColumnHeaderErrorMessage(), 200);
+        columnConfig.setSortable(false);
         columnConfigs.add(columnConfig);
 
         return columnConfigs;
@@ -125,15 +127,12 @@ public class JobTabTargetsGrid extends EntityGrid<GwtJobTarget> {
                 if (result.getJobXmlDefinition() == null) {
                     JobTabTargetsGrid.this.toolbar.getAddEntityButton().enable();
                     if (selectedItem == null) {
-                        JobTabTargetsGrid.this.toolbar.getEditEntityButton().disable();
                         JobTabTargetsGrid.this.toolbar.getDeleteEntityButton().disable();
                     } else {
-                        JobTabTargetsGrid.this.toolbar.getEditEntityButton().enable();
                         JobTabTargetsGrid.this.toolbar.getDeleteEntityButton().enable();
                     }
                 } else {
                     JobTabTargetsGrid.this.toolbar.getAddEntityButton().disable();
-                    JobTabTargetsGrid.this.toolbar.getEditEntityButton().disable();
                     JobTabTargetsGrid.this.toolbar.getDeleteEntityButton().disable();
                 }
             }

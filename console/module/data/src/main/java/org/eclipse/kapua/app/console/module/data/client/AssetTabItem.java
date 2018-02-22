@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2011, 2017 Eurotech and/or its affiliates and others
+ * Copyright (c) 2011, 2018 Eurotech and/or its affiliates and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,16 +11,10 @@
  *******************************************************************************/
 package org.eclipse.kapua.app.console.module.data.client;
 
-import com.extjs.gxt.ui.client.event.SelectionChangedEvent;
-import com.extjs.gxt.ui.client.event.SelectionChangedListener;
-import org.eclipse.kapua.app.console.module.api.client.resources.icons.IconSet;
-import org.eclipse.kapua.app.console.module.api.client.resources.icons.KapuaIcon;
-import org.eclipse.kapua.app.console.module.api.client.ui.button.Button;
-import org.eclipse.kapua.app.console.module.api.client.ui.tab.TabItem;
-import org.eclipse.kapua.app.console.module.api.shared.model.GwtSession;
-
 import com.extjs.gxt.ui.client.Style.LayoutRegion;
 import com.extjs.gxt.ui.client.event.ButtonEvent;
+import com.extjs.gxt.ui.client.event.SelectionChangedEvent;
+import com.extjs.gxt.ui.client.event.SelectionChangedListener;
 import com.extjs.gxt.ui.client.event.SelectionListener;
 import com.extjs.gxt.ui.client.util.Margins;
 import com.extjs.gxt.ui.client.widget.LayoutContainer;
@@ -33,6 +27,11 @@ import com.extjs.gxt.ui.client.widget.layout.TableData;
 import com.extjs.gxt.ui.client.widget.layout.TableLayout;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.user.client.Element;
+import org.eclipse.kapua.app.console.module.api.client.resources.icons.IconSet;
+import org.eclipse.kapua.app.console.module.api.client.resources.icons.KapuaIcon;
+import org.eclipse.kapua.app.console.module.api.client.ui.button.Button;
+import org.eclipse.kapua.app.console.module.api.client.ui.tab.TabItem;
+import org.eclipse.kapua.app.console.module.api.shared.model.session.GwtSession;
 import org.eclipse.kapua.app.console.module.data.client.messages.ConsoleDataMessages;
 import org.eclipse.kapua.app.console.module.data.shared.model.GwtDatastoreAsset;
 import org.eclipse.kapua.app.console.module.data.shared.model.GwtDatastoreDevice;
@@ -49,7 +48,6 @@ public class AssetTabItem extends TabItem {
     private DeviceTable deviceTable;
 
     private Button queryButton;
-    private Button refreshButton;
 
     private ResultsTable resultsTable;
     private AssetTable assetTable;
@@ -80,22 +78,6 @@ public class AssetTabItem extends TabItem {
         tablesLayout.setMinSize(250);
         add(tables, tablesLayout);
 
-        BorderLayoutData refreshButtonLayout = new BorderLayoutData(LayoutRegion.NORTH, 0.08f);
-        refreshButtonLayout.setMargins(new Margins(5));
-        refreshButton = new Button(MSGS.refresh(), new KapuaIcon(IconSet.REFRESH), new SelectionListener<ButtonEvent>() {
-
-            @Override
-            public void componentSelected(ButtonEvent ce) {
-                deviceTable.refresh();
-                resultsTable.refresh();
-            }
-        });
-        TableLayout refreshButtonTL = new TableLayout();
-        refreshButtonTL.setCellPadding(0);
-        LayoutContainer refreshButtonContainer = new LayoutContainer(refreshButtonTL);
-        refreshButtonContainer.add(refreshButton, new TableData());
-        tables.add(refreshButtonContainer, refreshButtonLayout);
-
         BorderLayoutData deviceLayout = new BorderLayoutData(LayoutRegion.WEST, 0.33f);
         deviceTable = new DeviceTable(currentSession);
         deviceLayout.setMargins(new Margins(0, 5, 0, 0));
@@ -104,7 +86,6 @@ public class AssetTabItem extends TabItem {
 
             @Override
             public void selectionChanged(SelectionChangedEvent<GwtDatastoreDevice> se) {
-                refreshButton.enable();
                 if (se.getSelectedItem() != null) {
                     assetTable.refresh(se.getSelectedItem());
                 } else {
@@ -176,6 +157,9 @@ public class AssetTabItem extends TabItem {
         resultsTableTabItem.setLayout(new FitLayout());
         resultsTableTabItem.add(resultsTable);
         resultsTabPanel.add(resultsTableTabItem);
+
+        ConsoleResizeHandler consoleResizeHandler = new ConsoleResizeHandler();
+        consoleResizeHandler.addResizeHandler(messageLayout, 1400);
 
         add(resultsTabPanel, resultsLayout);
     }
