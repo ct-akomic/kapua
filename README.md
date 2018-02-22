@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ![Eclipse Kapua™ logo](docs/user-manual/en/images/kapua-logo.png)
 
 # Eclipse Kapua&trade;
@@ -162,3 +163,12 @@ They will provide more advanced deployment scenarios.
 ### Contributing
 
 If you're interested to get involved in IoT and Eclipse Kapua&trade; project, join the community and give your contribution to the project, please read [how to contribute to Eclipse Kapua&trade;](https://github.com/eclipse/kapua/blob/develop/CONTRIBUTING.md).
+=======
+<p align="center">
+  <img src="https://kapua.everyware-cloud.com/img/kapua_logo_vertical.png" alt="Eclipse Kapua"/>
+</p>
+
+# Eclipse Kapua&trade;
+
+To get started with Eclipse Kapua&trade; please goto the [develop branch](https://github.com/eclipse/kapua/tree/develop). Master will be update soon from it.
+>>>>>>> 01769b0073ce161cc5cdde587c6aabfdfc3a00d4
